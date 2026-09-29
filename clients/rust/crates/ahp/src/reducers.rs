@@ -57,12 +57,12 @@ use ahp_types::actions::{
     ChatTurnStartedAction, StateAction,
 };
 use ahp_types::state::{
-    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, BackgroundWork, ChangesetOperationStatus,
-    ChangesetState, ChangesetStatus, ChatInputRequest, ChatState, ChildCustomization,
-    ConfirmationOption, Customization, CustomizationEnablement, ErrorResponsePart,
-    InputRequestResponsePart, McpServerCustomization, McpServerStartingState, McpServerState,
-    McpServerStoppedState, PendingMessage, PendingMessageKind, ResourceWatchState, ResponsePart,
-    RootState, SessionInputRequest, SessionLifecycle, SessionState, SessionStatus,
+    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, BackgroundWork,
+    ChangesetOperationStatus, ChangesetState, ChangesetStatus, ChatInputRequest, ChatState,
+    ChildCustomization, ConfirmationOption, Customization, CustomizationEnablement,
+    ErrorResponsePart, InputRequestResponsePart, McpServerCustomization, McpServerStartingState,
+    McpServerState, McpServerStoppedState, PendingMessage, PendingMessageKind, ResourceWatchState,
+    ResponsePart, RootState, SessionInputRequest, SessionLifecycle, SessionState, SessionStatus,
     TerminalCommandPart, TerminalContentPart, TerminalExitedLifecycleState, TerminalLifecycleState,
     TerminalState, TerminalUnclassifiedPart, ToolCallAuthRequiredState, ToolCallCancellationReason,
     ToolCallCancelledState, ToolCallCompletedState, ToolCallConfirmationReason,

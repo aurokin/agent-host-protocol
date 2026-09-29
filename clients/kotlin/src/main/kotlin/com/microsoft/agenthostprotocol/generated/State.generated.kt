@@ -2000,7 +2000,14 @@ data class BackgroundShellWork(
     /**
      * Command line, displayed as plain text.
      */
-    val command: String
+    val command: String,
+    /**
+     * Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+     * can show that output. Clients open it like
+     * {@link ToolResultTerminalContent.resource}; `isPty` on its
+     * {@link TerminalState} says whether the output is plain text.
+     */
+    val terminal: String? = null
 )
 
 @Serializable

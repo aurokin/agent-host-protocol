@@ -2064,6 +2064,12 @@ pub struct BackgroundShellWork {
     pub meta: Option<JsonObject>,
     /// Command line, displayed as plain text.
     pub command: String,
+    /// Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+    /// can show that output. Clients open it like
+    /// {@link ToolResultTerminalContent.resource}; `isPty` on its
+    /// {@link TerminalState} says whether the output is plain text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub terminal: Option<Uri>,
 }
 
 /// Immutable selected-text snapshot captured when a side chat is created.

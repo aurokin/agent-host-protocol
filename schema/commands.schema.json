@@ -4269,6 +4269,10 @@
         "command": {
           "type": "string",
           "description": "Command line, displayed as plain text."
+        },
+        "terminal": {
+          "$ref": "#/$defs/URI",
+          "description": "Terminal carrying this shell's output. Hosts SHOULD set this whenever they\ncan show that output. Clients open it like\n{@link ToolResultTerminalContent.resource}; `isPty` on its\n{@link TerminalState} says whether the output is plain text."
         }
       },
       "required": [

@@ -1207,6 +1207,13 @@ public sealed record BackgroundShellWork
 
     /// <summary>Command line, displayed as plain text.</summary>
     public required string Command { get; init; }
+
+    /// <summary>Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+    /// can show that output. Clients open it like
+    /// {@link ToolResultTerminalContent.resource}; `isPty` on its
+    /// {@link TerminalState} says whether the output is plain text.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Terminal { get; init; }
 }
 
 /// <summary>Full state for a single chat, loaded when a client subscribes to the chat's

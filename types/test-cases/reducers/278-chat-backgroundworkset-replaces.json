@@ -1,5 +1,5 @@
 {
-  "description": "setting background work replaces by ID without duplication",
+  "description": "setting background work replaces by ID without duplication, adding its terminal",
   "reducer": "chat",
   "initial": {
     "resource": "ahp-chat:/session/main",
@@ -25,7 +25,8 @@
         "id": "shell-1",
         "label": "Run unit tests",
         "command": "npm test",
-        "startedAt": "2026-09-25T00:00:00.000Z"
+        "startedAt": "2026-09-25T00:00:00.000Z",
+        "terminal": "agenthost:/terminal/1"
       }
     }
   ],
@@ -41,7 +42,8 @@
         "id": "shell-1",
         "label": "Run unit tests",
         "command": "npm test",
-        "startedAt": "2026-09-25T00:00:00.000Z"
+        "startedAt": "2026-09-25T00:00:00.000Z",
+        "terminal": "agenthost:/terminal/1"
       }
     ]
   }

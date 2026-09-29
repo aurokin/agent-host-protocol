@@ -2078,6 +2078,11 @@ public struct BackgroundShellWork: Codable, Sendable {
     public var kind: BackgroundWorkKind
     /// Command line, displayed as plain text.
     public var command: String
+    /// Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+    /// can show that output. Clients open it like
+    /// {@link ToolResultTerminalContent.resource}; `isPty` on its
+    /// {@link TerminalState} says whether the output is plain text.
+    public var terminal: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -2086,6 +2091,7 @@ public struct BackgroundShellWork: Codable, Sendable {
         case meta = "_meta"
         case kind
         case command
+        case terminal
     }
 
     public init(
@@ -2094,7 +2100,8 @@ public struct BackgroundShellWork: Codable, Sendable {
         startedAt: String,
         meta: [String: AnyCodable]? = nil,
         kind: BackgroundWorkKind,
-        command: String
+        command: String,
+        terminal: String? = nil
     ) {
         self.id = id
         self.label = label
@@ -2102,6 +2109,7 @@ public struct BackgroundShellWork: Codable, Sendable {
         self.meta = meta
         self.kind = kind
         self.command = command
+        self.terminal = terminal
     }
 }
 

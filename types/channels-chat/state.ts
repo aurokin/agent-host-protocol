@@ -229,6 +229,13 @@ export interface BackgroundShellWork extends BackgroundWorkBase {
   kind: BackgroundWorkKind.Shell;
   /** Command line, displayed as plain text. */
   command: string;
+  /**
+   * Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+   * can show that output. Clients open it like
+   * {@link ToolResultTerminalContent.resource}; `isPty` on its
+   * {@link TerminalState} says whether the output is plain text.
+   */
+  terminal?: URI;
 }
 
 /**

@@ -1380,6 +1380,11 @@ type BackgroundShellWork struct {
 	Kind BackgroundWorkKind         `json:"kind"`
 	// Command line, displayed as plain text.
 	Command string `json:"command"`
+	// Terminal carrying this shell's output. Hosts SHOULD set this whenever they
+	// can show that output. Clients open it like
+	// {@link ToolResultTerminalContent.resource}; `isPty` on its
+	// {@link TerminalState} says whether the output is plain text.
+	Terminal *URI `json:"terminal,omitempty"`
 }
 
 // Immutable selected-text snapshot captured when a side chat is created.

@@ -696,7 +696,7 @@ const STATE_STRUCTS = [
   'MultipleWorkingDirectoriesCapability',
   'SessionModelInfo', 'ModelSelection', 'AgentSelection', 'ConfigPropertySchema', 'ConfigSchema',
   'PendingMessage', 'ChatState', 'ChatSummary', 'SideChatSelection', 'SessionState', 'SessionActiveClient',
-  'BackgroundShellWork', 'BackgroundSubagentWork',
+  'BackgroundShellWork',
   'SessionChatInputRequest', 'SessionToolConfirmationRequest', 'SessionToolClientExecutionRequest',
   'SessionToolAuthenticationRequest',
   'SessionSummary', 'SessionChatSummary', 'ChangesSummary', 'ProjectInfo', 'SessionConfigState', 'Turn', 'ActiveTurn', 'Message',
@@ -988,7 +988,6 @@ const BACKGROUND_WORK_UNION: UnionConfig = {
   allowUnknown: true,
   variants: [
     { caseName: 'shell', structName: 'BackgroundShellWork', discriminantValue: 'shell' },
-    { caseName: 'subagent', structName: 'BackgroundSubagentWork', discriminantValue: 'subagent' },
   ],
 };
 

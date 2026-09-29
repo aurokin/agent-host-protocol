@@ -1,5 +1,5 @@
 {
-  "description": "setting background work appends shells and subagents in order",
+  "description": "setting background work appends a new entry",
   "reducer": "chat",
   "initial": {
     "resource": "ahp-chat:/session/main",
@@ -19,17 +19,6 @@
         "status": "running",
         "startedAt": "2026-09-25T00:00:00.000Z"
       }
-    },
-    {
-      "type": "chat/backgroundWorkSet",
-      "work": {
-        "kind": "subagent",
-        "id": "subagent-1",
-        "label": "Review changes",
-        "status": "running",
-        "startedAt": "2026-09-25T00:01:00.000Z",
-        "chat": "ahp-chat:/session/subagent-tool-1"
-      }
     }
   ],
   "expected": {
@@ -46,14 +35,6 @@
         "command": "npm test",
         "status": "running",
         "startedAt": "2026-09-25T00:00:00.000Z"
-      },
-      {
-        "kind": "subagent",
-        "id": "subagent-1",
-        "label": "Review changes",
-        "status": "running",
-        "startedAt": "2026-09-25T00:01:00.000Z",
-        "chat": "ahp-chat:/session/subagent-tool-1"
       }
     ]
   }

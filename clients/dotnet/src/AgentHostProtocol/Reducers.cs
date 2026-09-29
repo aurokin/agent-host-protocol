@@ -94,7 +94,6 @@ public static class Reducers
     private static string BackgroundWorkId(BackgroundWork work) => work.Value switch
     {
         BackgroundShellWork v => v.Id,
-        BackgroundSubagentWork v => v.Id,
         JsonElement e when e.TryGetProperty("id", out JsonElement id) => id.GetString() ?? string.Empty,
         _ => string.Empty,
     };

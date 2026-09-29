@@ -780,10 +780,6 @@ value class BackgroundWorkKind(val rawValue: String) {
          * A shell command that continues after its initiating tool call returns.
          */
         val SHELL: BackgroundWorkKind = BackgroundWorkKind("shell")
-        /**
-         * A subagent running in the background.
-         */
-        val SUBAGENT: BackgroundWorkKind = BackgroundWorkKind("subagent")
     }
 }
 
@@ -1666,7 +1662,7 @@ data class ChatState(
     val activity: String? = null,
     /**
      * Work running outside the current turn that will resume this chat when it
-     * finishes, such as background shells and subagents. Independent of turn state.
+     * finishes, such as background shells. Independent of turn state.
      */
     val backgroundWork: List<BackgroundWork>? = null,
     /**
@@ -2001,7 +1997,7 @@ data class BackgroundShellWork(
      */
     val id: String,
     /**
-     * Human-readable label, such as the command's purpose or the subagent's name.
+     * Human-readable label, such as the command's purpose.
      */
     val label: String,
     /**
@@ -2026,40 +2022,6 @@ data class BackgroundShellWork(
      * Terminal channel carrying this shell's output, when the host provides one.
      */
     val terminal: String? = null
-)
-
-@Serializable
-data class BackgroundSubagentWork(
-    /**
-     * Identifier of this entry, unique within the owning chat across all kinds.
-     * The host derives it however it likes (for example from the kind plus the
-     * agent's own task id); consumers MUST treat it as opaque. It is the key for
-     * the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
-     * convention.
-     */
-    val id: String,
-    /**
-     * Human-readable label, such as the command's purpose or the subagent's name.
-     */
-    val label: String,
-    /**
-     * Current activity of the unfinished work.
-     */
-    val status: BackgroundWorkStatus,
-    /**
-     * ISO 8601 timestamp when the work started.
-     */
-    val startedAt: String,
-    /**
-     * Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
-     */
-    @SerialName("_meta")
-    val meta: Map<String, JsonElement>? = null,
-    val kind: BackgroundWorkKind,
-    /**
-     * The subagent's chat.
-     */
-    val chat: String
 )
 
 @Serializable
@@ -7003,8 +6965,6 @@ sealed interface BackgroundWork
 
 @JvmInline
 value class BackgroundWorkShell(val value: BackgroundShellWork) : BackgroundWork
-@JvmInline
-value class BackgroundWorkSubagent(val value: BackgroundSubagentWork) : BackgroundWork
 /**
  * Forward-compat catch-all for unknown BackgroundWork discriminators.
  *
@@ -7030,7 +6990,6 @@ internal object BackgroundWorkSerializer : KSerializer<BackgroundWork> {
             ?: return BackgroundWorkUnknown(obj)
         return when (discriminant) {
             "shell" -> BackgroundWorkShell(input.json.decodeFromJsonElement(BackgroundShellWork.serializer(), element))
-            "subagent" -> BackgroundWorkSubagent(input.json.decodeFromJsonElement(BackgroundSubagentWork.serializer(), element))
             else -> BackgroundWorkUnknown(obj)
         }
     }
@@ -7040,7 +6999,6 @@ internal object BackgroundWorkSerializer : KSerializer<BackgroundWork> {
             ?: error("BackgroundWork can only be serialized to JSON")
         val element: JsonElement = when (value) {
             is BackgroundWorkShell -> output.json.encodeToJsonElement(BackgroundShellWork.serializer(), value.value)
-            is BackgroundWorkSubagent -> output.json.encodeToJsonElement(BackgroundSubagentWork.serializer(), value.value)
             is BackgroundWorkUnknown -> value.raw
         }
         output.encodeJsonElement(element)

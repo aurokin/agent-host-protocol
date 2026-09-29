@@ -368,8 +368,6 @@ type BackgroundWorkKind string
 const (
 	// A shell command that continues after its initiating tool call returns.
 	BackgroundWorkKindShell BackgroundWorkKind = "shell"
-	// A subagent running in the background.
-	BackgroundWorkKindSubagent BackgroundWorkKind = "subagent"
 )
 
 // Activity of background work that has not finished.
@@ -1271,7 +1269,7 @@ type ChatState struct {
 	// Human-readable description of what the chat is currently doing
 	Activity *string `json:"activity,omitempty"`
 	// Work running outside the current turn that will resume this chat when it
-	// finishes, such as background shells and subagents. Independent of turn state.
+	// finishes, such as background shells. Independent of turn state.
 	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
 	ModifiedAt string `json:"modifiedAt"`
@@ -1372,7 +1370,7 @@ type BackgroundShellWork struct {
 	// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
 	// convention.
 	Id string `json:"id"`
-	// Human-readable label, such as the command's purpose or the subagent's name.
+	// Human-readable label, such as the command's purpose.
 	Label string `json:"label"`
 	// Current activity of the unfinished work.
 	Status BackgroundWorkStatus `json:"status"`
@@ -1385,27 +1383,6 @@ type BackgroundShellWork struct {
 	Command string `json:"command"`
 	// Terminal channel carrying this shell's output, when the host provides one.
 	Terminal *URI `json:"terminal,omitempty"`
-}
-
-// A subagent running in the background. Its own state lives in its chat.
-type BackgroundSubagentWork struct {
-	// Identifier of this entry, unique within the owning chat across all kinds.
-	// The host derives it however it likes (for example from the kind plus the
-	// agent's own task id); consumers MUST treat it as opaque. It is the key for
-	// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
-	// convention.
-	Id string `json:"id"`
-	// Human-readable label, such as the command's purpose or the subagent's name.
-	Label string `json:"label"`
-	// Current activity of the unfinished work.
-	Status BackgroundWorkStatus `json:"status"`
-	// ISO 8601 timestamp when the work started.
-	StartedAt string `json:"startedAt"`
-	// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
-	Meta map[string]json.RawMessage `json:"_meta,omitempty"`
-	Kind BackgroundWorkKind         `json:"kind"`
-	// The subagent's chat.
-	Chat URI `json:"chat"`
 }
 
 // Immutable selected-text snapshot captured when a side chat is created.
@@ -5693,8 +5670,7 @@ type BackgroundWork struct {
 // concrete variant of BackgroundWork.
 type isBackgroundWork interface{ isBackgroundWork() }
 
-func (*BackgroundShellWork) isBackgroundWork()    {}
-func (*BackgroundSubagentWork) isBackgroundWork() {}
+func (*BackgroundShellWork) isBackgroundWork() {}
 
 // BackgroundWorkUnknown carries an unrecognized BackgroundWork variant — typically a discriminator value introduced by a newer protocol version. The original JSON object is preserved verbatim so that re-encoding round-trips faithfully.
 type BackgroundWorkUnknown struct {
@@ -5712,12 +5688,6 @@ func (u *BackgroundWork) UnmarshalJSON(data []byte) error {
 	switch disc {
 	case "shell":
 		var value BackgroundShellWork
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.Value = &value
-	case "subagent":
-		var value BackgroundSubagentWork
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}

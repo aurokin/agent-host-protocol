@@ -76,7 +76,6 @@ private func refineToolCallContributor(_ current: ToolCallContributor?, _ next: 
 private func backgroundWorkID(_ w: BackgroundWork) -> String? {
     switch w {
     case .shell(let x): return x.id
-    case .subagent(let x): return x.id
     case .unknown: return nil
     }
 }

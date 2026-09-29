@@ -486,7 +486,6 @@ fn session_input_request_id(r: &SessionInputRequest) -> Option<&str> {
 fn background_work_id(w: &BackgroundWork) -> Option<&str> {
     match w {
         BackgroundWork::Shell(x) => Some(x.id.as_str()),
-        BackgroundWork::Subagent(x) => Some(x.id.as_str()),
         BackgroundWork::Unknown(v) => v.get("id").and_then(serde_json::Value::as_str),
     }
 }

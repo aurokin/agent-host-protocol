@@ -4970,7 +4970,7 @@
           "items": {
             "$ref": "#/$defs/BackgroundWork"
           },
-          "description": "Work running outside the current turn that will resume this chat when it\nfinishes, such as background shells and subagents. Independent of turn state."
+          "description": "Work running outside the current turn that will resume this chat when it\nfinishes, such as background shells. Independent of turn state."
         },
         "modifiedAt": {
           "type": "string",
@@ -5106,7 +5106,7 @@
         },
         "label": {
           "type": "string",
-          "description": "Human-readable label, such as the command's purpose or the subagent's name."
+          "description": "Human-readable label, such as the command's purpose."
         },
         "status": {
           "$ref": "#/$defs/BackgroundWorkStatus",
@@ -5139,7 +5139,7 @@
         },
         "label": {
           "type": "string",
-          "description": "Human-readable label, such as the command's purpose or the subagent's name."
+          "description": "Human-readable label, such as the command's purpose."
         },
         "status": {
           "$ref": "#/$defs/BackgroundWorkStatus",
@@ -5173,48 +5173,6 @@
         "startedAt",
         "kind",
         "command"
-      ]
-    },
-    "BackgroundSubagentWork": {
-      "type": "object",
-      "description": "A subagent running in the background. Its own state lives in its chat.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identifier of this entry, unique within the owning chat across all kinds.\nThe host derives it however it likes (for example from the kind plus the\nagent's own task id); consumers MUST treat it as opaque. It is the key for\nthe `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert\nconvention."
-        },
-        "label": {
-          "type": "string",
-          "description": "Human-readable label, such as the command's purpose or the subagent's name."
-        },
-        "status": {
-          "$ref": "#/$defs/BackgroundWorkStatus",
-          "description": "Current activity of the unfinished work."
-        },
-        "startedAt": {
-          "type": "string",
-          "description": "ISO 8601 timestamp when the work started."
-        },
-        "_meta": {
-          "type": "object",
-          "additionalProperties": {},
-          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
-        },
-        "kind": {
-          "const": "subagent"
-        },
-        "chat": {
-          "$ref": "#/$defs/URI",
-          "description": "The subagent's chat."
-        }
-      },
-      "required": [
-        "id",
-        "label",
-        "status",
-        "startedAt",
-        "kind",
-        "chat"
       ]
     },
     "SideChatSelection": {
@@ -8557,14 +8515,7 @@
       "description": "Discriminated union of all MCP server lifecycle states.\nDiscriminated by `kind` (a {@link McpServerStatus} value)."
     },
     "BackgroundWork": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/BackgroundShellWork"
-        },
-        {
-          "$ref": "#/$defs/BackgroundSubagentWork"
-        }
-      ],
+      "$ref": "#/$defs/BackgroundShellWork",
       "description": "Work running outside the current turn that will resume the owning chat when\nit finishes. Clients that don't recognize a `kind` should keep the entry and\nmay render it from the common fields."
     },
     "ChatOrigin": {

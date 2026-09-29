@@ -1002,8 +1002,6 @@ pub enum TerminalLifecycleStatus {
 pub enum BackgroundWorkKind {
     /// A shell command that continues after its initiating tool call returns.
     Shell,
-    /// A subagent running in the background.
-    Subagent,
     /// Unknown raw value from a newer protocol version, preserved verbatim.
     Unknown(String),
 }
@@ -1015,7 +1013,6 @@ impl serde::Serialize for BackgroundWorkKind {
     {
         match self {
             Self::Shell => serializer.serialize_str("shell"),
-            Self::Subagent => serializer.serialize_str("subagent"),
             Self::Unknown(value) => serializer.serialize_str(value),
         }
     }
@@ -1029,7 +1026,6 @@ impl<'de> serde::Deserialize<'de> for BackgroundWorkKind {
         let raw = <String as serde::Deserialize>::deserialize(deserializer)?;
         Ok(match raw.as_str() {
             "shell" => Self::Shell,
-            "subagent" => Self::Subagent,
             _ => Self::Unknown(raw),
         })
     }
@@ -1965,7 +1961,7 @@ pub struct ChatState {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
     /// Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells and subagents. Independent of turn state.
+    /// finishes, such as background shells. Independent of turn state.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
@@ -2086,7 +2082,7 @@ pub struct BackgroundShellWork {
     /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
     /// convention.
     pub id: String,
-    /// Human-readable label, such as the command's purpose or the subagent's name.
+    /// Human-readable label, such as the command's purpose.
     pub label: String,
     /// Current activity of the unfinished work.
     pub status: BackgroundWorkStatus,
@@ -2100,29 +2096,6 @@ pub struct BackgroundShellWork {
     /// Terminal channel carrying this shell's output, when the host provides one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub terminal: Option<Uri>,
-}
-
-/// A subagent running in the background. Its own state lives in its chat.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BackgroundSubagentWork {
-    /// Identifier of this entry, unique within the owning chat across all kinds.
-    /// The host derives it however it likes (for example from the kind plus the
-    /// agent's own task id); consumers MUST treat it as opaque. It is the key for
-    /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
-    /// convention.
-    pub id: String,
-    /// Human-readable label, such as the command's purpose or the subagent's name.
-    pub label: String,
-    /// Current activity of the unfinished work.
-    pub status: BackgroundWorkStatus,
-    /// ISO 8601 timestamp when the work started.
-    pub started_at: String,
-    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
-    #[serde(rename = "_meta", default, skip_serializing_if = "Option::is_none")]
-    pub meta: Option<JsonObject>,
-    /// The subagent's chat.
-    pub chat: Uri,
 }
 
 /// Immutable selected-text snapshot captured when a side chat is created.
@@ -6314,8 +6287,6 @@ pub enum SessionInputRequest {
 pub enum BackgroundWork {
     #[serde(rename = "shell")]
     Shell(BackgroundShellWork),
-    #[serde(rename = "subagent")]
-    Subagent(BackgroundSubagentWork),
     /// Unknown or future variant — preserved as raw JSON for round-trip fidelity.
     /// Reducers treat this as a no-op.
     #[serde(untagged)]

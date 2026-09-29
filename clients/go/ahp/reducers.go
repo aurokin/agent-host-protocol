@@ -327,8 +327,6 @@ func backgroundWorkID(w ahptypes.BackgroundWork) (string, bool) {
 	switch v := w.Value.(type) {
 	case *ahptypes.BackgroundShellWork:
 		return v.Id, true
-	case *ahptypes.BackgroundSubagentWork:
-		return v.Id, true
 	}
 	return "", false
 }

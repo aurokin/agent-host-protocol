@@ -761,7 +761,6 @@ const STATE_STRUCTS: { name: string; omitDiscriminants?: boolean; goName?: strin
   { name: 'ChatState' },
   { name: 'ChatSummary' },
   { name: 'BackgroundShellWork' },
-  { name: 'BackgroundSubagentWork' },
   { name: 'SideChatSelection' },
   { name: 'PendingMessage' },
   { name: 'ProjectInfo' },
@@ -1138,7 +1137,6 @@ const BACKGROUND_WORK_UNION: UnionConfig = {
   doc: 'BackgroundWork is work running outside the current turn that will resume the owning chat when it finishes.',
   variants: [
     { variantName: 'Shell', innerType: 'BackgroundShellWork', wireValue: 'shell' },
-    { variantName: 'Subagent', innerType: 'BackgroundSubagentWork', wireValue: 'subagent' },
   ],
   unknown: true,
 };

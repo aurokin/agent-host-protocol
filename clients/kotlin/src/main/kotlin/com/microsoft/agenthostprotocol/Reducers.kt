@@ -255,7 +255,6 @@ private fun customizationId(c: Customization): String? = when (c) {
 
 private fun backgroundWorkId(w: BackgroundWork): String? = when (w) {
     is BackgroundWorkShell -> w.value.id
-    is BackgroundWorkSubagent -> w.value.id
     // Unknown variants carry an opaque `raw` JSON object — no id to expose.
     is BackgroundWorkUnknown -> null
 }

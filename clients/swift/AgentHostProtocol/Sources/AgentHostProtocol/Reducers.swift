@@ -76,6 +76,7 @@ private func refineToolCallContributor(_ current: ToolCallContributor?, _ next: 
 private func backgroundWorkID(_ w: BackgroundWork) -> String? {
     switch w {
     case .shell(let x): return x.id
+    case .subagent(let x): return x.id
     // Kinds from newer hosts still carry the common `id`, so they can be replaced and removed.
     case .unknown(let raw): return (raw.value as? [String: Any])?["id"] as? String
     }

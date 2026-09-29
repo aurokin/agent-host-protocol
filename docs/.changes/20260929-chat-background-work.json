@@ -1,4 +1,4 @@
 {
   "type": "added",
-  "message": "Expose chat-owned background work, starting with background shells, in chat state and session chat summaries, with `chat/backgroundWorkSet` and `chat/backgroundWorkRemoved` actions independent of turn lifetime."
+  "message": "Expose chat-owned background work (background shells and subagents) in chat state and session chat summaries, with `chat/backgroundWorkSet` and `chat/backgroundWorkRemoved` actions independent of turn lifetime."
 }

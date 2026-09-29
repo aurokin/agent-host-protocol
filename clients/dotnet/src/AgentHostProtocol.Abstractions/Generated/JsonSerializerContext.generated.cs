@@ -77,6 +77,7 @@ namespace Microsoft.AgentHostProtocol;
 [JsonSerializable(typeof(AutomationTriggerKind))]
 [JsonSerializable(typeof(AutomationUpdateRequestedAction))]
 [JsonSerializable(typeof(BackgroundShellWork))]
+[JsonSerializable(typeof(BackgroundSubagentWork))]
 [JsonSerializable(typeof(BackgroundWork))]
 [JsonSerializable(typeof(BackgroundWorkKind))]
 [JsonSerializable(typeof(Changeset))]

@@ -767,6 +767,8 @@ public enum TerminalLifecycleStatus: String, Codable, Sendable {
 public enum BackgroundWorkKind: Codable, Sendable, Equatable {
     /// A shell command that continues after its initiating tool call returns.
     case shell
+    /// A subagent running in the background.
+    case subagent
     /// Unknown raw value from a newer protocol version, preserved verbatim.
     case unknown(String)
 
@@ -775,6 +777,7 @@ public enum BackgroundWorkKind: Codable, Sendable, Equatable {
         let raw = try container.decode(String.self)
         switch raw {
         case "shell": self = .shell
+        case "subagent": self = .subagent
         default: self = .unknown(raw)
         }
     }
@@ -783,6 +786,7 @@ public enum BackgroundWorkKind: Codable, Sendable, Equatable {
         var container = encoder.singleValueContainer()
         switch self {
         case .shell: try container.encode("shell")
+        case .subagent: try container.encode("subagent")
         case .unknown(let raw): try container.encode(raw)
         }
     }
@@ -1660,7 +1664,7 @@ public struct ChatState: Codable, Sendable {
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
     /// Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells. Independent of turn state.
+    /// finishes, such as background shells and subagents. Independent of turn state.
     public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
@@ -2069,7 +2073,7 @@ public struct BackgroundShellWork: Codable, Sendable {
     /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
     /// convention.
     public var id: String
-    /// Human-readable label, such as the command's purpose.
+    /// Human-readable label, such as the command's purpose or the subagent's name.
     public var label: String
     /// ISO 8601 timestamp when the work started.
     public var startedAt: String
@@ -2110,6 +2114,50 @@ public struct BackgroundShellWork: Codable, Sendable {
         self.kind = kind
         self.command = command
         self.terminal = terminal
+    }
+}
+
+public struct BackgroundSubagentWork: Codable, Sendable {
+    /// Identifier of this entry, unique within the owning chat across all kinds.
+    /// The host derives it however it likes (for example from the kind plus the
+    /// agent's own task id); consumers MUST treat it as opaque. It is the key for
+    /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
+    /// convention.
+    public var id: String
+    /// Human-readable label, such as the command's purpose or the subagent's name.
+    public var label: String
+    /// ISO 8601 timestamp when the work started.
+    public var startedAt: String
+    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    public var meta: [String: AnyCodable]?
+    public var kind: BackgroundWorkKind
+    /// The subagent's chat: the same chat the spawning tool call's
+    /// {@link ToolResultSubagentContent.resource} points to.
+    public var chat: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case startedAt
+        case meta = "_meta"
+        case kind
+        case chat
+    }
+
+    public init(
+        id: String,
+        label: String,
+        startedAt: String,
+        meta: [String: AnyCodable]? = nil,
+        kind: BackgroundWorkKind,
+        chat: String
+    ) {
+        self.id = id
+        self.label = label
+        self.startedAt = startedAt
+        self.meta = meta
+        self.kind = kind
+        self.chat = chat
     }
 }
 
@@ -7800,6 +7848,7 @@ public enum SessionInputRequest: Codable, Sendable {
 }
 public enum BackgroundWork: Codable, Sendable {
     case shell(BackgroundShellWork)
+    case subagent(BackgroundSubagentWork)
     /// Unknown or future discriminant; the raw payload is preserved
     /// and re-encoded verbatim for forward-compatibility.
     case unknown(AnyCodable)
@@ -7817,6 +7866,8 @@ public enum BackgroundWork: Codable, Sendable {
         switch discriminant {
         case "shell":
             self = .shell(try BackgroundShellWork(from: decoder))
+        case "subagent":
+            self = .subagent(try BackgroundSubagentWork(from: decoder))
         default:
             self = .unknown(try AnyCodable(from: decoder))
         }
@@ -7825,6 +7876,7 @@ public enum BackgroundWork: Codable, Sendable {
     public func encode(to encoder: Encoder) throws {
         switch self {
         case .shell(let value): try value.encode(to: encoder)
+        case .subagent(let value): try value.encode(to: encoder)
         case .unknown(let value): try value.encode(to: encoder)
         }
     }

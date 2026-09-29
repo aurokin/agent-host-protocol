@@ -256,6 +256,7 @@ private fun customizationId(c: Customization): String? = when (c) {
 
 private fun backgroundWorkId(w: BackgroundWork): String? = when (w) {
     is BackgroundWorkShell -> w.value.id
+    is BackgroundWorkSubagent -> w.value.id
     // Kinds from newer hosts still carry the common `id`, so they can be replaced and removed.
     is BackgroundWorkUnknown -> (w.raw["id"] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }

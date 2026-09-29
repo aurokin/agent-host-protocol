@@ -1,5 +1,5 @@
 {
-  "description": "finished background work is removed without changing chat status",
+  "description": "removing finished background work keeps other entries and chat status",
   "reducer": "chat",
   "initial": {
     "resource": "ahp-chat:/session/main",
@@ -14,6 +14,13 @@
         "label": "Run tests",
         "command": "npm test",
         "startedAt": "2026-09-25T00:00:00.000Z"
+      },
+      {
+        "kind": "subagent",
+        "id": "subagent-1",
+        "label": "Review changes",
+        "startedAt": "2026-09-25T00:01:00.000Z",
+        "chat": "ahp-chat:/session/subagent-tool-1"
       }
     ]
   },
@@ -33,6 +40,14 @@
     "status": 1,
     "modifiedAt": "2026-09-25T00:00:00.000Z",
     "turns": [],
-    "backgroundWork": []
+    "backgroundWork": [
+      {
+        "kind": "subagent",
+        "id": "subagent-1",
+        "label": "Review changes",
+        "startedAt": "2026-09-25T00:01:00.000Z",
+        "chat": "ahp-chat:/session/subagent-tool-1"
+      }
+    ]
   }
 }

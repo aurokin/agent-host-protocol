@@ -467,6 +467,9 @@ public enum BackgroundWorkKind
     /// <summary>A shell command that continues after its initiating tool call returns.</summary>
     [WireValue("shell")]
     Shell,
+    /// <summary>A subagent running in the background.</summary>
+    [WireValue("subagent")]
+    Subagent,
 }
 
 /// <summary>Discriminant for the {@link McpServerState} union.</summary>
@@ -1192,7 +1195,7 @@ public sealed record BackgroundShellWork
     /// convention.</summary>
     public required string Id { get; init; }
 
-    /// <summary>Human-readable label, such as the command's purpose.</summary>
+    /// <summary>Human-readable label, such as the command's purpose or the subagent's name.</summary>
     public required string Label { get; init; }
 
     /// <summary>ISO 8601 timestamp when the work started.</summary>
@@ -1214,6 +1217,34 @@ public sealed record BackgroundShellWork
     /// {@link TerminalState} says whether the output is plain text.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Terminal { get; init; }
+}
+
+/// <summary>A subagent running in the background. Its own state lives in its chat.</summary>
+public sealed record BackgroundSubagentWork
+{
+    /// <summary>Identifier of this entry, unique within the owning chat across all kinds.
+    /// The host derives it however it likes (for example from the kind plus the
+    /// agent's own task id); consumers MUST treat it as opaque. It is the key for
+    /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
+    /// convention.</summary>
+    public required string Id { get; init; }
+
+    /// <summary>Human-readable label, such as the command's purpose or the subagent's name.</summary>
+    public required string Label { get; init; }
+
+    /// <summary>ISO 8601 timestamp when the work started.</summary>
+    public required string StartedAt { get; init; }
+
+    /// <summary>Provider-specific metadata, such as how a shell's lifetime is tied to its agent.</summary>
+    [JsonPropertyName("_meta")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, JsonElement>? Meta { get; init; }
+
+    public BackgroundWorkKind Kind { get; init; }
+
+    /// <summary>The subagent's chat: the same chat the spawning tool call's
+    /// {@link ToolResultSubagentContent.resource} points to.</summary>
+    public required string Chat { get; init; }
 }
 
 /// <summary>Full state for a single chat, loaded when a client subscribes to the chat's
@@ -1243,7 +1274,7 @@ public sealed class ChatState
     public string? Activity { get; set; }
 
     /// <summary>Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells. Independent of turn state.</summary>
+    /// finishes, such as background shells and subagents. Independent of turn state.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<BackgroundWork>? BackgroundWork { get; set; }
 
@@ -6245,6 +6276,7 @@ internal sealed class BackgroundWorkConverter : UnionConverter<BackgroundWork>
             variants: new Dictionary<string, Type>
             {
         ["shell"] = typeof(BackgroundShellWork),
+        ["subagent"] = typeof(BackgroundSubagentWork),
             },
             allowUnknown: true)
     {

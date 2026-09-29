@@ -1663,8 +1663,10 @@ public struct ChatState: Codable, Sendable {
     public var status: SessionStatus
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
-    /// Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells and subagents. Independent of turn state.
+    /// Work that keeps running after the tool call that started it returns and
+    /// will resume this chat when it finishes, such as background shells and
+    /// subagents. Entries stay listed whether or not the turn that started them is
+    /// still open.
     public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
@@ -2077,7 +2079,7 @@ public struct BackgroundShellWork: Codable, Sendable {
     public var label: String
     /// ISO 8601 timestamp when the work started.
     public var startedAt: String
-    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    /// Provider-specific metadata.
     public var meta: [String: AnyCodable]?
     public var kind: BackgroundWorkKind
     /// Command line, displayed as plain text.
@@ -2128,7 +2130,7 @@ public struct BackgroundSubagentWork: Codable, Sendable {
     public var label: String
     /// ISO 8601 timestamp when the work started.
     public var startedAt: String
-    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    /// Provider-specific metadata.
     public var meta: [String: AnyCodable]?
     public var kind: BackgroundWorkKind
     /// The subagent's chat: the same chat the spawning tool call's

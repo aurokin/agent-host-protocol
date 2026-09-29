@@ -1185,7 +1185,10 @@ public sealed class ChatSummary
     public List<string>? WorkingDirectories { get; set; }
 }
 
-/// <summary>A shell command continuing outside its initiating tool call.</summary>
+/// <summary>A shell command continuing outside its initiating tool call. Covers shells
+/// tied to the agent's lifetime (attached) and shells that outlive it
+/// (detached). Whether a shell is attached is provider-specific and goes in its
+/// `_meta`.</summary>
 public sealed record BackgroundShellWork
 {
     /// <summary>Identifier of this entry, unique within the owning chat across all kinds.
@@ -1201,7 +1204,7 @@ public sealed record BackgroundShellWork
     /// <summary>ISO 8601 timestamp when the work started.</summary>
     public required string StartedAt { get; init; }
 
-    /// <summary>Provider-specific metadata, such as how a shell's lifetime is tied to its agent.</summary>
+    /// <summary>Provider-specific metadata.</summary>
     [JsonPropertyName("_meta")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, JsonElement>? Meta { get; init; }
@@ -1235,7 +1238,7 @@ public sealed record BackgroundSubagentWork
     /// <summary>ISO 8601 timestamp when the work started.</summary>
     public required string StartedAt { get; init; }
 
-    /// <summary>Provider-specific metadata, such as how a shell's lifetime is tied to its agent.</summary>
+    /// <summary>Provider-specific metadata.</summary>
     [JsonPropertyName("_meta")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, JsonElement>? Meta { get; init; }
@@ -1273,8 +1276,10 @@ public sealed class ChatState
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Activity { get; set; }
 
-    /// <summary>Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells and subagents. Independent of turn state.</summary>
+    /// <summary>Work that keeps running after the tool call that started it returns and
+    /// will resume this chat when it finishes, such as background shells and
+    /// subagents. Entries stay listed whether or not the turn that started them is
+    /// still open.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<BackgroundWork>? BackgroundWork { get; set; }
 
@@ -6256,7 +6261,7 @@ internal sealed class SessionInputRequestConverter : UnionConverter<SessionInput
     }
 }
 
-/// <summary>Work running outside the current turn that will resume the owning chat when it finishes.</summary>
+/// <summary>Work that keeps running after the tool call that started it returns and will resume the owning chat when it finishes.</summary>
 [JsonConverter(typeof(BackgroundWorkConverter))]
 public sealed class BackgroundWork : AhpUnion
 {

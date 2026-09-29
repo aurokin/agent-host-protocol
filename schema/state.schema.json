@@ -2420,7 +2420,7 @@
           "items": {
             "$ref": "#/$defs/BackgroundWork"
           },
-          "description": "Work running outside the current turn that will resume this chat when it\nfinishes, such as background shells and subagents. Independent of turn state."
+          "description": "Work that keeps running after the tool call that started it returns and\nwill resume this chat when it finishes, such as background shells and\nsubagents. Entries stay listed whether or not the turn that started them is\nstill open."
         },
         "modifiedAt": {
           "type": "string",
@@ -2573,7 +2573,7 @@
         "_meta": {
           "type": "object",
           "additionalProperties": {},
-          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+          "description": "Provider-specific metadata."
         }
       },
       "required": [
@@ -2584,7 +2584,7 @@
     },
     "BackgroundShellWork": {
       "type": "object",
-      "description": "A shell command continuing outside its initiating tool call.",
+      "description": "A shell command continuing outside its initiating tool call. Covers shells\ntied to the agent's lifetime (attached) and shells that outlive it\n(detached). Whether a shell is attached is provider-specific and goes in its\n`_meta`.",
       "properties": {
         "id": {
           "type": "string",
@@ -2601,7 +2601,7 @@
         "_meta": {
           "type": "object",
           "additionalProperties": {},
-          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+          "description": "Provider-specific metadata."
         },
         "kind": {
           "const": "shell"
@@ -2642,7 +2642,7 @@
         "_meta": {
           "type": "object",
           "additionalProperties": {},
-          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+          "description": "Provider-specific metadata."
         },
         "kind": {
           "const": "subagent"
@@ -6008,7 +6008,7 @@
           "$ref": "#/$defs/BackgroundSubagentWork"
         }
       ],
-      "description": "Work running outside the current turn that will resume the owning chat when\nit finishes. Clients that don't recognize a `kind` should keep the entry and\nmay render it from the common fields."
+      "description": "Work that keeps running after the tool call that started it returns and will\nresume the owning chat when it finishes. Clients that don't recognize a\n`kind` should keep the entry and may render it from the common fields."
     },
     "ChatOrigin": {
       "oneOf": [

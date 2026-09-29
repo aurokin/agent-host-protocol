@@ -1263,8 +1263,10 @@ type ChatState struct {
 	Status SessionStatus `json:"status"`
 	// Human-readable description of what the chat is currently doing
 	Activity *string `json:"activity,omitempty"`
-	// Work running outside the current turn that will resume this chat when it
-	// finishes, such as background shells and subagents. Independent of turn state.
+	// Work that keeps running after the tool call that started it returns and
+	// will resume this chat when it finishes, such as background shells and
+	// subagents. Entries stay listed whether or not the turn that started them is
+	// still open.
 	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
 	ModifiedAt string `json:"modifiedAt"`
@@ -1365,7 +1367,10 @@ type ChatSummary struct {
 	WorkingDirectories []URI `json:"workingDirectories,omitempty"`
 }
 
-// A shell command continuing outside its initiating tool call.
+// A shell command continuing outside its initiating tool call. Covers shells
+// tied to the agent's lifetime (attached) and shells that outlive it
+// (detached). Whether a shell is attached is provider-specific and goes in its
+// `_meta`.
 type BackgroundShellWork struct {
 	// Identifier of this entry, unique within the owning chat across all kinds.
 	// The host derives it however it likes (for example from the kind plus the
@@ -1377,7 +1382,7 @@ type BackgroundShellWork struct {
 	Label string `json:"label"`
 	// ISO 8601 timestamp when the work started.
 	StartedAt string `json:"startedAt"`
-	// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+	// Provider-specific metadata.
 	Meta map[string]json.RawMessage `json:"_meta,omitempty"`
 	Kind BackgroundWorkKind         `json:"kind"`
 	// Command line, displayed as plain text.
@@ -1401,7 +1406,7 @@ type BackgroundSubagentWork struct {
 	Label string `json:"label"`
 	// ISO 8601 timestamp when the work started.
 	StartedAt string `json:"startedAt"`
-	// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+	// Provider-specific metadata.
 	Meta map[string]json.RawMessage `json:"_meta,omitempty"`
 	Kind BackgroundWorkKind         `json:"kind"`
 	// The subagent's chat: the same chat the spawning tool call's
@@ -5685,7 +5690,7 @@ func (u SessionInputRequest) MarshalJSON() ([]byte, error) {
 	return json.Marshal(u.Value)
 }
 
-// BackgroundWork is work running outside the current turn that will resume the owning chat when it finishes.
+// BackgroundWork is work that keeps running after the tool call that started it returns and will resume the owning chat when it finishes.
 type BackgroundWork struct {
 	Value isBackgroundWork
 }

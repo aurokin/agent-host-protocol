@@ -55,8 +55,10 @@ export interface ChatState {
   /** Human-readable description of what the chat is currently doing */
   activity?: string;
   /**
-   * Work running outside the current turn that will resume this chat when it
-   * finishes, such as background shells and subagents. Independent of turn state.
+   * Work that keeps running after the tool call that started it returns and
+   * will resume this chat when it finishes, such as background shells and
+   * subagents. Entries stay listed whether or not the turn that started them is
+   * still open.
    */
   backgroundWork?: BackgroundWork[];
   /** Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`) */
@@ -218,12 +220,15 @@ interface BackgroundWorkBase {
   label: string;
   /** ISO 8601 timestamp when the work started. */
   startedAt: string;
-  /** Provider-specific metadata, such as how a shell's lifetime is tied to its agent. */
+  /** Provider-specific metadata. */
   _meta?: Record<string, unknown>;
 }
 
 /**
- * A shell command continuing outside its initiating tool call.
+ * A shell command continuing outside its initiating tool call. Covers shells
+ * tied to the agent's lifetime (attached) and shells that outlive it
+ * (detached). Whether a shell is attached is provider-specific and goes in its
+ * `_meta`.
  *
  * @category Background Work
  */
@@ -255,9 +260,9 @@ export interface BackgroundSubagentWork extends BackgroundWorkBase {
 }
 
 /**
- * Work running outside the current turn that will resume the owning chat when
- * it finishes. Clients that don't recognize a `kind` should keep the entry and
- * may render it from the common fields.
+ * Work that keeps running after the tool call that started it returns and will
+ * resume the owning chat when it finishes. Clients that don't recognize a
+ * `kind` should keep the entry and may render it from the common fields.
  *
  * @category Background Work
  */

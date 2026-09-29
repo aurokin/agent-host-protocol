@@ -141,8 +141,9 @@ For example, `(status & SessionStatus.InProgress) !== 0` is true for both `InPro
 
 Subscribable on a [Chat Channel](/specification/chat-channel) at `ahp-chat:/<cid>`. A session is a catalog of chats (`SessionState.chats`); each chat carries the per-conversation state — the turn history, the active turn and its streaming response parts (including live input requests), tool calls, steering/queued messages, and the user's in-progress draft. A session starts with a default chat (`SessionState.defaultChat`); hosts advertising the `multipleChats` capability let clients open more via `createChat`.
 
-`backgroundWork` lists work running outside the current turn that will resume the
-chat when it finishes, such as background shells and subagents.
+`backgroundWork` lists work that keeps running after the tool call that started it
+returns and will resume the chat when it finishes, such as background shells and
+subagents.
 Hosts publish complete entries with `chat/backgroundWorkSet` and remove them with
 `chat/backgroundWorkRemoved` when they finish or are no longer tracked. Entry IDs are
 opaque, unique within a chat across all kinds, and scoped to that chat. Hosts mirror
@@ -152,10 +153,12 @@ subscriber can discover its chats' background work without reading transcripts.
 Each entry has a `kind`, a `label`, and a start time. Every entry is unfinished work;
 hosts remove entries when the work finishes rather than marking them done. A shell
 entry adds its plain-text command and, when the host has one, the terminal carrying
-its output. A subagent entry points to the subagent's own chat instead of repeating
-its state. The kind set is non-exhaustive: clients should keep entries of unknown
-kinds and may render them from the common fields. Provider-specific details, such as
-how a shell's lifetime is tied to its agent, belong in `_meta`.
+its output. Shells can be tied to the agent's lifetime (attached) or outlive it
+(detached); that distinction is provider-specific and goes in the shell's `_meta`. A
+subagent entry points to the subagent's own chat instead of repeating its state. The
+kind set is non-exhaustive: clients should keep entries of unknown kinds and may
+render them from the common fields. Other provider-specific details also belong in
+`_meta`.
 
 The collection survives turn completion, cancellation, steering, and history
 truncation; those actions do not establish whether the work has stopped. Hosts must

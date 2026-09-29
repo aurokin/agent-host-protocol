@@ -1640,8 +1640,10 @@ data class ChatState(
      */
     val activity: String? = null,
     /**
-     * Work running outside the current turn that will resume this chat when it
-     * finishes, such as background shells and subagents. Independent of turn state.
+     * Work that keeps running after the tool call that started it returns and
+     * will resume this chat when it finishes, such as background shells and
+     * subagents. Entries stay listed whether or not the turn that started them is
+     * still open.
      */
     val backgroundWork: List<BackgroundWork>? = null,
     /**
@@ -1996,7 +1998,7 @@ data class BackgroundShellWork(
      */
     val startedAt: String,
     /**
-     * Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+     * Provider-specific metadata.
      */
     @SerialName("_meta")
     val meta: Map<String, JsonElement>? = null,
@@ -2033,7 +2035,7 @@ data class BackgroundSubagentWork(
      */
     val startedAt: String,
     /**
-     * Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+     * Provider-specific metadata.
      */
     @SerialName("_meta")
     val meta: Map<String, JsonElement>? = null,

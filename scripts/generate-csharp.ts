@@ -1163,7 +1163,7 @@ const SESSION_INPUT_REQUEST_UNION: UnionConfig = {
 const BACKGROUND_WORK_UNION: UnionConfig = {
   name: 'BackgroundWork',
   discriminantField: 'kind',
-  doc: 'Work running outside the current turn that will resume the owning chat when it finishes.',
+  doc: 'Work that keeps running after the tool call that started it returns and will resume the owning chat when it finishes.',
   variants: [
     { variantName: 'Shell', innerType: 'BackgroundShellWork', wireValue: 'shell' },
     { variantName: 'Subagent', innerType: 'BackgroundSubagentWork', wireValue: 'subagent' },

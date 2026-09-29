@@ -1927,8 +1927,10 @@ pub struct ChatState {
     /// Human-readable description of what the chat is currently doing
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
-    /// Work running outside the current turn that will resume this chat when it
-    /// finishes, such as background shells and subagents. Independent of turn state.
+    /// Work that keeps running after the tool call that started it returns and
+    /// will resume this chat when it finishes, such as background shells and
+    /// subagents. Entries stay listed whether or not the turn that started them is
+    /// still open.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
@@ -2049,7 +2051,10 @@ pub struct ChatSummary {
     pub working_directories: Option<Vec<Uri>>,
 }
 
-/// A shell command continuing outside its initiating tool call.
+/// A shell command continuing outside its initiating tool call. Covers shells
+/// tied to the agent's lifetime (attached) and shells that outlive it
+/// (detached). Whether a shell is attached is provider-specific and goes in its
+/// `_meta`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BackgroundShellWork {
@@ -2063,7 +2068,7 @@ pub struct BackgroundShellWork {
     pub label: String,
     /// ISO 8601 timestamp when the work started.
     pub started_at: String,
-    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    /// Provider-specific metadata.
     #[serde(rename = "_meta", default, skip_serializing_if = "Option::is_none")]
     pub meta: Option<JsonObject>,
     /// Command line, displayed as plain text.
@@ -2090,7 +2095,7 @@ pub struct BackgroundSubagentWork {
     pub label: String,
     /// ISO 8601 timestamp when the work started.
     pub started_at: String,
-    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    /// Provider-specific metadata.
     #[serde(rename = "_meta", default, skip_serializing_if = "Option::is_none")]
     pub meta: Option<JsonObject>,
     /// The subagent's chat: the same chat the spawning tool call's
@@ -6283,7 +6288,7 @@ pub enum SessionInputRequest {
     #[serde(untagged)]
     Unknown(serde_json::Value),
 }
-/// Work running outside the current turn that will resume the owning chat when it finishes.
+/// Work that keeps running after the tool call that started it returns and will resume the owning chat when it finishes.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum BackgroundWork {

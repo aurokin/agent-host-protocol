@@ -151,10 +151,9 @@ subscriber can discover its chats' background work without reading transcripts.
 
 Each entry has a `kind`, a `label`, and a start time. Every entry is unfinished work;
 hosts remove entries when the work finishes rather than marking them done. A shell
-entry adds its plain-text command and, when the host provides one, a terminal channel
-for its output. The kind set is non-exhaustive: clients should keep entries of unknown
-kinds and may render them from the common fields. Provider-specific details, such as
-how a shell's lifetime is tied to its agent, belong in `_meta`.
+entry adds its plain-text command. The kind set is non-exhaustive: clients should keep
+entries of unknown kinds and may render them from the common fields. Provider-specific
+details, such as how a shell's lifetime is tied to its agent, belong in `_meta`.
 
 The collection survives turn completion, cancellation, steering, and history
 truncation; those actions do not establish whether the work has stopped. Hosts must

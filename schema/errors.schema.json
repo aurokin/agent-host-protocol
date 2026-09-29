@@ -2690,10 +2690,6 @@
         "command": {
           "type": "string",
           "description": "Command line, displayed as plain text."
-        },
-        "terminal": {
-          "$ref": "#/$defs/URI",
-          "description": "Terminal channel carrying this shell's output, when the host provides one."
         }
       },
       "required": [

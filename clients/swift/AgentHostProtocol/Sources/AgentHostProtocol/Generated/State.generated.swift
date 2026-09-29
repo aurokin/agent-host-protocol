@@ -2065,8 +2065,6 @@ public struct BackgroundShellWork: Codable, Sendable {
     public var kind: BackgroundWorkKind
     /// Command line, displayed as plain text.
     public var command: String
-    /// Terminal channel carrying this shell's output, when the host provides one.
-    public var terminal: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -2075,7 +2073,6 @@ public struct BackgroundShellWork: Codable, Sendable {
         case meta = "_meta"
         case kind
         case command
-        case terminal
     }
 
     public init(
@@ -2084,8 +2081,7 @@ public struct BackgroundShellWork: Codable, Sendable {
         startedAt: String,
         meta: [String: AnyCodable]? = nil,
         kind: BackgroundWorkKind,
-        command: String,
-        terminal: String? = nil
+        command: String
     ) {
         self.id = id
         self.label = label
@@ -2093,7 +2089,6 @@ public struct BackgroundShellWork: Codable, Sendable {
         self.meta = meta
         self.kind = kind
         self.command = command
-        self.terminal = terminal
     }
 }
 

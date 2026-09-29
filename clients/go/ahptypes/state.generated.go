@@ -1370,8 +1370,6 @@ type BackgroundShellWork struct {
 	Kind BackgroundWorkKind         `json:"kind"`
 	// Command line, displayed as plain text.
 	Command string `json:"command"`
-	// Terminal channel carrying this shell's output, when the host provides one.
-	Terminal *URI `json:"terminal,omitempty"`
 }
 
 // Immutable selected-text snapshot captured when a side chat is created.

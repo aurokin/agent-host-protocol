@@ -1201,10 +1201,6 @@ public sealed record BackgroundShellWork
 
     /// <summary>Command line, displayed as plain text.</summary>
     public required string Command { get; init; }
-
-    /// <summary>Terminal channel carrying this shell's output, when the host provides one.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Terminal { get; init; }
 }
 
 /// <summary>Full state for a single chat, loaded when a client subscribes to the chat's

@@ -1988,11 +1988,7 @@ data class BackgroundShellWork(
     /**
      * Command line, displayed as plain text.
      */
-    val command: String,
-    /**
-     * Terminal channel carrying this shell's output, when the host provides one.
-     */
-    val terminal: String? = null
+    val command: String
 )
 
 @Serializable

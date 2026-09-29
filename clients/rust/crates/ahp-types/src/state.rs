@@ -2054,9 +2054,6 @@ pub struct BackgroundShellWork {
     pub meta: Option<JsonObject>,
     /// Command line, displayed as plain text.
     pub command: String,
-    /// Terminal channel carrying this shell's output, when the host provides one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub terminal: Option<Uri>,
 }
 
 /// Immutable selected-text snapshot captured when a side chat is created.

@@ -72,7 +72,7 @@ private func refineToolCallContributor(_ current: ToolCallContributor?, _ next: 
     return next
 }
 
-/// Extracts the stable `id` of a session input request, or `nil` for unknown variants.
+/// Extracts the stable `id` of background work, including kinds from newer hosts.
 private func backgroundWorkID(_ w: BackgroundWork) -> String? {
     switch w {
     case .shell(let x): return x.id
@@ -81,6 +81,7 @@ private func backgroundWorkID(_ w: BackgroundWork) -> String? {
     }
 }
 
+/// Extracts the stable `id` of a session input request, or `nil` for unknown variants.
 private func sessionInputRequestID(_ r: SessionInputRequest) -> String? {
     switch r {
     case .chatInput(let x): return x.id

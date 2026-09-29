@@ -13,7 +13,6 @@
         "id": "shell-1",
         "label": "Run tests",
         "command": "npm test",
-        "status": "running",
         "startedAt": "2026-09-25T00:00:00.000Z"
       }
     ]
@@ -25,7 +24,6 @@
         "kind": "futureKind",
         "id": "future-1",
         "label": "Start review",
-        "status": "running",
         "startedAt": "2026-09-25T00:01:00.000Z",
         "target": "reviewer"
       }
@@ -36,7 +34,6 @@
         "kind": "futureKind",
         "id": "future-1",
         "label": "Review changes",
-        "status": "running",
         "startedAt": "2026-09-25T00:01:00.000Z",
         "target": "reviewer"
       }
@@ -54,14 +51,12 @@
         "id": "shell-1",
         "label": "Run tests",
         "command": "npm test",
-        "status": "running",
         "startedAt": "2026-09-25T00:00:00.000Z"
       },
       {
         "kind": "futureKind",
         "id": "future-1",
         "label": "Review changes",
-        "status": "running",
         "startedAt": "2026-09-25T00:01:00.000Z",
         "target": "reviewer"
       }

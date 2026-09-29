@@ -1031,43 +1031,6 @@ impl<'de> serde::Deserialize<'de> for BackgroundWorkKind {
     }
 }
 
-/// Activity of background work that has not finished.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum BackgroundWorkStatus {
-    Running,
-    /// Not making progress on its own, for example a shell waiting for input.
-    Idle,
-    /// Unknown raw value from a newer protocol version, preserved verbatim.
-    Unknown(String),
-}
-
-impl serde::Serialize for BackgroundWorkStatus {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Self::Running => serializer.serialize_str("running"),
-            Self::Idle => serializer.serialize_str("idle"),
-            Self::Unknown(value) => serializer.serialize_str(value),
-        }
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for BackgroundWorkStatus {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let raw = <String as serde::Deserialize>::deserialize(deserializer)?;
-        Ok(match raw.as_str() {
-            "running" => Self::Running,
-            "idle" => Self::Idle,
-            _ => Self::Unknown(raw),
-        })
-    }
-}
-
 /// Discriminant for the {@link McpServerState} union.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum McpServerStatus {
@@ -2084,8 +2047,6 @@ pub struct BackgroundShellWork {
     pub id: String,
     /// Human-readable label, such as the command's purpose.
     pub label: String,
-    /// Current activity of the unfinished work.
-    pub status: BackgroundWorkStatus,
     /// ISO 8601 timestamp when the work started.
     pub started_at: String,
     /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.

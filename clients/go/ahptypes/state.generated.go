@@ -370,15 +370,6 @@ const (
 	BackgroundWorkKindShell BackgroundWorkKind = "shell"
 )
 
-// Activity of background work that has not finished.
-type BackgroundWorkStatus string
-
-const (
-	BackgroundWorkStatusRunning BackgroundWorkStatus = "running"
-	// Not making progress on its own, for example a shell waiting for input.
-	BackgroundWorkStatusIdle BackgroundWorkStatus = "idle"
-)
-
 // Discriminant for the {@link McpServerState} union.
 type McpServerStatus string
 
@@ -1372,8 +1363,6 @@ type BackgroundShellWork struct {
 	Id string `json:"id"`
 	// Human-readable label, such as the command's purpose.
 	Label string `json:"label"`
-	// Current activity of the unfinished work.
-	Status BackgroundWorkStatus `json:"status"`
 	// ISO 8601 timestamp when the work started.
 	StartedAt string `json:"startedAt"`
 	// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.

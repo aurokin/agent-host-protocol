@@ -794,31 +794,6 @@ internal object BackgroundWorkKindSerializer : KSerializer<BackgroundWorkKind> {
 }
 
 /**
- * Activity of background work that has not finished.
- */
-@Serializable(with = BackgroundWorkStatusSerializer::class)
-@JvmInline
-value class BackgroundWorkStatus(val rawValue: String) {
-    companion object {
-        val RUNNING: BackgroundWorkStatus = BackgroundWorkStatus("running")
-        /**
-         * Not making progress on its own, for example a shell waiting for input.
-         */
-        val IDLE: BackgroundWorkStatus = BackgroundWorkStatus("idle")
-    }
-}
-
-internal object BackgroundWorkStatusSerializer : KSerializer<BackgroundWorkStatus> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("BackgroundWorkStatus", PrimitiveKind.STRING)
-    override fun serialize(encoder: Encoder, value: BackgroundWorkStatus) {
-        encoder.encodeString(value.rawValue)
-    }
-    override fun deserialize(decoder: Decoder): BackgroundWorkStatus =
-        BackgroundWorkStatus(decoder.decodeString())
-}
-
-/**
  * Discriminant for the {@link McpServerState} union.
  */
 @Serializable(with = McpServerStatusSerializer::class)
@@ -2000,10 +1975,6 @@ data class BackgroundShellWork(
      * Human-readable label, such as the command's purpose.
      */
     val label: String,
-    /**
-     * Current activity of the unfinished work.
-     */
-    val status: BackgroundWorkStatus,
     /**
      * ISO 8601 timestamp when the work started.
      */

@@ -13,7 +13,6 @@
         "id": "shell-1",
         "label": "Run tests",
         "command": "npm test",
-        "status": "running",
         "startedAt": "2026-09-25T00:00:00.000Z"
       }
     ]
@@ -24,9 +23,8 @@
       "work": {
         "kind": "shell",
         "id": "shell-1",
-        "label": "Run tests",
+        "label": "Run unit tests",
         "command": "npm test",
-        "status": "idle",
         "startedAt": "2026-09-25T00:00:00.000Z"
       }
     }
@@ -41,9 +39,8 @@
       {
         "kind": "shell",
         "id": "shell-1",
-        "label": "Run tests",
+        "label": "Run unit tests",
         "command": "npm test",
-        "status": "idle",
         "startedAt": "2026-09-25T00:00:00.000Z"
       }
     ]

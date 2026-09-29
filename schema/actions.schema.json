@@ -5108,10 +5108,6 @@
           "type": "string",
           "description": "Human-readable label, such as the command's purpose."
         },
-        "status": {
-          "$ref": "#/$defs/BackgroundWorkStatus",
-          "description": "Current activity of the unfinished work."
-        },
         "startedAt": {
           "type": "string",
           "description": "ISO 8601 timestamp when the work started."
@@ -5125,7 +5121,6 @@
       "required": [
         "id",
         "label",
-        "status",
         "startedAt"
       ]
     },
@@ -5140,10 +5135,6 @@
         "label": {
           "type": "string",
           "description": "Human-readable label, such as the command's purpose."
-        },
-        "status": {
-          "$ref": "#/$defs/BackgroundWorkStatus",
-          "description": "Current activity of the unfinished work."
         },
         "startedAt": {
           "type": "string",
@@ -5169,7 +5160,6 @@
       "required": [
         "id",
         "label",
-        "status",
         "startedAt",
         "kind",
         "command"
@@ -9274,14 +9264,6 @@
       ],
       "type": "string",
       "description": "Why an MCP server is currently in the {@link McpServerStatus.AuthRequired}\nstate. Mirrors the three failure modes defined by the\n[MCP authorization spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md)."
-    },
-    "BackgroundWorkStatus": {
-      "enum": [
-        "running",
-        "idle"
-      ],
-      "type": "string",
-      "description": "Activity of background work that has not finished."
     },
     "TurnState": {
       "enum": [

@@ -469,17 +469,6 @@ public enum BackgroundWorkKind
     Shell,
 }
 
-/// <summary>Activity of background work that has not finished.</summary>
-[JsonConverter(typeof(WireEnumConverter<BackgroundWorkStatus>))]
-public enum BackgroundWorkStatus
-{
-    [WireValue("running")]
-    Running,
-    /// <summary>Not making progress on its own, for example a shell waiting for input.</summary>
-    [WireValue("idle")]
-    Idle,
-}
-
 /// <summary>Discriminant for the {@link McpServerState} union.</summary>
 [JsonConverter(typeof(WireEnumConverter<McpServerStatus>))]
 public enum McpServerStatus
@@ -1199,9 +1188,6 @@ public sealed record BackgroundShellWork
 
     /// <summary>Human-readable label, such as the command's purpose.</summary>
     public required string Label { get; init; }
-
-    /// <summary>Current activity of the unfinished work.</summary>
-    public BackgroundWorkStatus Status { get; init; }
 
     /// <summary>ISO 8601 timestamp when the work started.</summary>
     public required string StartedAt { get; init; }

@@ -2647,10 +2647,6 @@
           "type": "string",
           "description": "Human-readable label, such as the command's purpose."
         },
-        "status": {
-          "$ref": "#/$defs/BackgroundWorkStatus",
-          "description": "Current activity of the unfinished work."
-        },
         "startedAt": {
           "type": "string",
           "description": "ISO 8601 timestamp when the work started."
@@ -2664,7 +2660,6 @@
       "required": [
         "id",
         "label",
-        "status",
         "startedAt"
       ]
     },
@@ -2679,10 +2674,6 @@
         "label": {
           "type": "string",
           "description": "Human-readable label, such as the command's purpose."
-        },
-        "status": {
-          "$ref": "#/$defs/BackgroundWorkStatus",
-          "description": "Current activity of the unfinished work."
         },
         "startedAt": {
           "type": "string",
@@ -2708,7 +2699,6 @@
       "required": [
         "id",
         "label",
-        "status",
         "startedAt",
         "kind",
         "command"
@@ -7836,14 +7826,6 @@
     "BackgroundWork": {
       "$ref": "#/$defs/BackgroundShellWork",
       "description": "Work running outside the current turn that will resume the owning chat when\nit finishes. Clients that don't recognize a `kind` should keep the entry and\nmay render it from the common fields."
-    },
-    "BackgroundWorkStatus": {
-      "enum": [
-        "running",
-        "idle"
-      ],
-      "type": "string",
-      "description": "Activity of background work that has not finished."
     },
     "ChatInputQuestion": {
       "oneOf": [

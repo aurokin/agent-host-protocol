@@ -788,34 +788,6 @@ public enum BackgroundWorkKind: Codable, Sendable, Equatable {
     }
 }
 
-/// Activity of background work that has not finished.
-public enum BackgroundWorkStatus: Codable, Sendable, Equatable {
-    case running
-    /// Not making progress on its own, for example a shell waiting for input.
-    case idle
-    /// Unknown raw value from a newer protocol version, preserved verbatim.
-    case unknown(String)
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let raw = try container.decode(String.self)
-        switch raw {
-        case "running": self = .running
-        case "idle": self = .idle
-        default: self = .unknown(raw)
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .running: try container.encode("running")
-        case .idle: try container.encode("idle")
-        case .unknown(let raw): try container.encode(raw)
-        }
-    }
-}
-
 /// Discriminant for the {@link McpServerState} union.
 public enum McpServerStatus: Codable, Sendable, Equatable {
     /// Server has been registered but is not yet running.
@@ -2086,8 +2058,6 @@ public struct BackgroundShellWork: Codable, Sendable {
     public var id: String
     /// Human-readable label, such as the command's purpose.
     public var label: String
-    /// Current activity of the unfinished work.
-    public var status: BackgroundWorkStatus
     /// ISO 8601 timestamp when the work started.
     public var startedAt: String
     /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
@@ -2101,7 +2071,6 @@ public struct BackgroundShellWork: Codable, Sendable {
     enum CodingKeys: String, CodingKey {
         case id
         case label
-        case status
         case startedAt
         case meta = "_meta"
         case kind
@@ -2112,7 +2081,6 @@ public struct BackgroundShellWork: Codable, Sendable {
     public init(
         id: String,
         label: String,
-        status: BackgroundWorkStatus,
         startedAt: String,
         meta: [String: AnyCodable]? = nil,
         kind: BackgroundWorkKind,
@@ -2121,7 +2089,6 @@ public struct BackgroundShellWork: Codable, Sendable {
     ) {
         self.id = id
         self.label = label
-        self.status = status
         self.startedAt = startedAt
         self.meta = meta
         self.kind = kind

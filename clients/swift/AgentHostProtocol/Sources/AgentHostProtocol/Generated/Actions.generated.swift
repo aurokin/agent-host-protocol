@@ -2444,6 +2444,10 @@ public struct PartialChatSummary: Codable, Sendable {
     public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String?
+    /// Aggregate summary of file changes associated with this chat. Servers may
+    /// populate this to give clients a quick at-a-glance view of the chat's
+    /// footprint without requiring the client to subscribe to a changeset.
+    public var changes: ChangesSummary?
     /// How this chat came into existence
     public var origin: ChatOrigin?
     /// How the user can interact with this chat. See {@link ChatInteractivity}.
@@ -2463,6 +2467,7 @@ public struct PartialChatSummary: Codable, Sendable {
         activity: String? = nil,
         backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String? = nil,
+        changes: ChangesSummary? = nil,
         origin: ChatOrigin? = nil,
         interactivity: ChatInteractivity? = nil,
         workingDirectories: [String]? = nil
@@ -2473,6 +2478,7 @@ public struct PartialChatSummary: Codable, Sendable {
         self.activity = activity
         self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
+        self.changes = changes
         self.origin = origin
         self.interactivity = interactivity
         self.workingDirectories = workingDirectories

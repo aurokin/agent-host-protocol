@@ -751,6 +751,9 @@ pub fn apply_action_to_session(state: &mut SessionState, action: &StateAction) -
             if let Some(modified_at) = &a.changes.modified_at {
                 chat.modified_at = modified_at.clone();
             }
+            if let Some(changes) = &a.changes.changes {
+                chat.changes = Some(changes.clone());
+            }
             if let Some(origin) = &a.changes.origin {
                 chat.origin = Some(origin.clone());
             }
@@ -2261,6 +2264,7 @@ mod tests {
             activity: None,
             background_work: None,
             modified_at: "1970-01-01T00:00:00.000Z".into(),
+            changes: None,
             origin: None,
             interactivity: None,
             working_directories: None,
@@ -2419,6 +2423,7 @@ mod tests {
             activity: None,
             background_work: None,
             modified_at: "1970-01-01T00:00:00.000Z".into(),
+            changes: None,
             origin: None,
             interactivity: None,
             working_directories: None,

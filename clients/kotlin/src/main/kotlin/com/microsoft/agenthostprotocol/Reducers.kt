@@ -11,6 +11,7 @@ import com.microsoft.agenthostprotocol.generated.*
 import java.time.Instant
 import java.time.format.DateTimeFormatterBuilder
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 // ─── Reducer Interface ──────────────────────────────────────────────────────
 
@@ -255,8 +256,8 @@ private fun customizationId(c: Customization): String? = when (c) {
 
 private fun backgroundWorkId(w: BackgroundWork): String? = when (w) {
     is BackgroundWorkShell -> w.value.id
-    // Unknown variants carry an opaque `raw` JSON object — no id to expose.
-    is BackgroundWorkUnknown -> null
+    // Kinds from newer hosts still carry the common `id`, so they can be replaced and removed.
+    is BackgroundWorkUnknown -> (w.raw["id"] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
 
 private fun sessionInputRequestId(r: SessionInputRequest): String? = when (r) {

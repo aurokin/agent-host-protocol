@@ -327,6 +327,14 @@ func backgroundWorkID(w ahptypes.BackgroundWork) (string, bool) {
 	switch v := w.Value.(type) {
 	case *ahptypes.BackgroundShellWork:
 		return v.Id, true
+	case *ahptypes.BackgroundWorkUnknown:
+		// Kinds from newer hosts still carry the common `id`, so they can be replaced and removed.
+		var common struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(v.Raw, &common); err == nil && common.ID != "" {
+			return common.ID, true
+		}
 	}
 	return "", false
 }

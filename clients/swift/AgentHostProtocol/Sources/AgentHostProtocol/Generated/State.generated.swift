@@ -760,6 +760,66 @@ public enum TerminalLifecycleStatus: String, Codable, Sendable {
     case exited = "exited"
 }
 
+/// Kind of {@link BackgroundWork}.
+///
+/// This is a general/typological union (not a lifecycle), so the discriminant is
+/// a `*Kind`.
+public enum BackgroundWorkKind: Codable, Sendable, Equatable {
+    /// A shell command that continues after its initiating tool call returns.
+    case shell
+    /// A subagent running in the background.
+    case subagent
+    /// Unknown raw value from a newer protocol version, preserved verbatim.
+    case unknown(String)
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        switch raw {
+        case "shell": self = .shell
+        case "subagent": self = .subagent
+        default: self = .unknown(raw)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .shell: try container.encode("shell")
+        case .subagent: try container.encode("subagent")
+        case .unknown(let raw): try container.encode(raw)
+        }
+    }
+}
+
+/// Activity of background work that has not finished.
+public enum BackgroundWorkStatus: Codable, Sendable, Equatable {
+    case running
+    /// Not making progress on its own, for example a shell waiting for input.
+    case idle
+    /// Unknown raw value from a newer protocol version, preserved verbatim.
+    case unknown(String)
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        switch raw {
+        case "running": self = .running
+        case "idle": self = .idle
+        default: self = .unknown(raw)
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .running: try container.encode("running")
+        case .idle: try container.encode("idle")
+        case .unknown(let raw): try container.encode(raw)
+        }
+    }
+}
+
 /// Discriminant for the {@link McpServerState} union.
 public enum McpServerStatus: Codable, Sendable, Equatable {
     /// Server has been registered but is not yet running.
@@ -1631,6 +1691,9 @@ public struct ChatState: Codable, Sendable {
     public var status: SessionStatus
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
+    /// Work running outside the current turn that will resume this chat when it
+    /// finishes, such as background shells and subagents. Independent of turn state.
+    public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
     /// How this chat came into existence
@@ -1697,6 +1760,7 @@ public struct ChatState: Codable, Sendable {
         case title
         case status
         case activity
+        case backgroundWork
         case modifiedAt
         case origin
         case interactivity
@@ -1716,6 +1780,7 @@ public struct ChatState: Codable, Sendable {
         title: String,
         status: SessionStatus,
         activity: String? = nil,
+        backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String,
         origin: ChatOrigin? = nil,
         interactivity: ChatInteractivity? = nil,
@@ -1733,6 +1798,7 @@ public struct ChatState: Codable, Sendable {
         self.title = title
         self.status = status
         self.activity = activity
+        self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
         self.origin = origin
         self.interactivity = interactivity
@@ -1757,6 +1823,8 @@ public struct ChatSummary: Codable, Sendable {
     public var status: SessionStatus
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
+    /// Background work, mirrored from {@link ChatState.backgroundWork}.
+    public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
     /// How this chat came into existence
@@ -1776,6 +1844,7 @@ public struct ChatSummary: Codable, Sendable {
         title: String,
         status: SessionStatus,
         activity: String? = nil,
+        backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String,
         origin: ChatOrigin? = nil,
         interactivity: ChatInteractivity? = nil,
@@ -1785,6 +1854,7 @@ public struct ChatSummary: Codable, Sendable {
         self.title = title
         self.status = status
         self.activity = activity
+        self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
         self.origin = origin
         self.interactivity = interactivity
@@ -2008,6 +2078,107 @@ public struct SessionActiveClient: Codable, Sendable {
         self.displayName = displayName
         self.tools = tools
         self.customizations = customizations
+    }
+}
+
+public struct BackgroundShellWork: Codable, Sendable {
+    /// Identifier of this entry, unique within the owning chat across all kinds.
+    /// The host derives it however it likes (for example from the kind plus the
+    /// agent's own task id); consumers MUST treat it as opaque. It is the key for
+    /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
+    /// convention.
+    public var id: String
+    /// Human-readable label, such as the command's purpose or the subagent's name.
+    public var label: String
+    /// Current activity of the unfinished work.
+    public var status: BackgroundWorkStatus
+    /// ISO 8601 timestamp when the work started.
+    public var startedAt: String
+    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    public var meta: [String: AnyCodable]?
+    public var kind: BackgroundWorkKind
+    /// Command line, displayed as plain text.
+    public var command: String
+    /// Terminal channel carrying this shell's output, when the host provides one.
+    public var terminal: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case status
+        case startedAt
+        case meta = "_meta"
+        case kind
+        case command
+        case terminal
+    }
+
+    public init(
+        id: String,
+        label: String,
+        status: BackgroundWorkStatus,
+        startedAt: String,
+        meta: [String: AnyCodable]? = nil,
+        kind: BackgroundWorkKind,
+        command: String,
+        terminal: String? = nil
+    ) {
+        self.id = id
+        self.label = label
+        self.status = status
+        self.startedAt = startedAt
+        self.meta = meta
+        self.kind = kind
+        self.command = command
+        self.terminal = terminal
+    }
+}
+
+public struct BackgroundSubagentWork: Codable, Sendable {
+    /// Identifier of this entry, unique within the owning chat across all kinds.
+    /// The host derives it however it likes (for example from the kind plus the
+    /// agent's own task id); consumers MUST treat it as opaque. It is the key for
+    /// the `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert
+    /// convention.
+    public var id: String
+    /// Human-readable label, such as the command's purpose or the subagent's name.
+    public var label: String
+    /// Current activity of the unfinished work.
+    public var status: BackgroundWorkStatus
+    /// ISO 8601 timestamp when the work started.
+    public var startedAt: String
+    /// Provider-specific metadata, such as how a shell's lifetime is tied to its agent.
+    public var meta: [String: AnyCodable]?
+    public var kind: BackgroundWorkKind
+    /// The subagent's chat.
+    public var chat: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case status
+        case startedAt
+        case meta = "_meta"
+        case kind
+        case chat
+    }
+
+    public init(
+        id: String,
+        label: String,
+        status: BackgroundWorkStatus,
+        startedAt: String,
+        meta: [String: AnyCodable]? = nil,
+        kind: BackgroundWorkKind,
+        chat: String
+    ) {
+        self.id = id
+        self.label = label
+        self.status = status
+        self.startedAt = startedAt
+        self.meta = meta
+        self.kind = kind
+        self.chat = chat
     }
 }
 
@@ -7692,6 +7863,41 @@ public enum SessionInputRequest: Codable, Sendable {
         case .toolConfirmation(let value): try value.encode(to: encoder)
         case .toolClientExecution(let value): try value.encode(to: encoder)
         case .toolAuthentication(let value): try value.encode(to: encoder)
+        case .unknown(let value): try value.encode(to: encoder)
+        }
+    }
+}
+public enum BackgroundWork: Codable, Sendable {
+    case shell(BackgroundShellWork)
+    case subagent(BackgroundSubagentWork)
+    /// Unknown or future discriminant; the raw payload is preserved
+    /// and re-encoded verbatim for forward-compatibility.
+    case unknown(AnyCodable)
+
+    private enum DiscriminantKey: String, CodingKey {
+        case discriminant = "kind"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: DiscriminantKey.self)
+        guard let discriminant = try container.decodeIfPresent(String.self, forKey: .discriminant) else {
+            self = .unknown(try AnyCodable(from: decoder))
+            return
+        }
+        switch discriminant {
+        case "shell":
+            self = .shell(try BackgroundShellWork(from: decoder))
+        case "subagent":
+            self = .subagent(try BackgroundSubagentWork(from: decoder))
+        default:
+            self = .unknown(try AnyCodable(from: decoder))
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .shell(let value): try value.encode(to: encoder)
+        case .subagent(let value): try value.encode(to: encoder)
         case .unknown(let value): try value.encode(to: encoder)
         }
     }

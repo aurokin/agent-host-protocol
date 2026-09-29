@@ -141,6 +141,29 @@ For example, `(status & SessionStatus.InProgress) !== 0` is true for both `InPro
 
 Subscribable on a [Chat Channel](/specification/chat-channel) at `ahp-chat:/<cid>`. A session is a catalog of chats (`SessionState.chats`); each chat carries the per-conversation state — the turn history, the active turn and its streaming response parts (including live input requests), tool calls, steering/queued messages, and the user's in-progress draft. A session starts with a default chat (`SessionState.defaultChat`); hosts advertising the `multipleChats` capability let clients open more via `createChat`.
 
+`backgroundWork` lists work running outside the current turn that will resume the
+chat when it finishes: background shells, background subagents, and future kinds.
+Hosts publish complete entries with `chat/backgroundWorkSet` and remove them with
+`chat/backgroundWorkRemoved` when they finish or are no longer tracked. Entry IDs are
+opaque, unique within a chat across all kinds, and scoped to that chat. Hosts mirror
+the list into `SessionState.chats` through `session/chatUpdated`, so a session
+subscriber can discover its chats' background work without reading transcripts.
+
+Each entry has a `kind`, a `label`, a `status` (running or idle, for example a shell
+waiting for input), and a start time. A shell entry adds its plain-text command and,
+when the host provides one, a terminal channel for its output. A subagent entry points
+to the subagent's own chat instead of repeating its state. The kind set is
+non-exhaustive: clients should keep entries of unknown kinds and may render them from
+the common fields. Provider-specific details, such as how a shell's lifetime is tied
+to its agent, belong in `_meta`.
+
+The collection survives turn completion, cancellation, steering, and history
+truncation; those actions do not establish whether the work has stopped. Hosts must
+reconcile the runtime's current inventory after restoring a chat, rather than replaying
+historical work as running. A missing collection means no inventory has been
+published; an empty collection contains no active work. This metadata does not
+provide process controls or a new turn-completion rule.
+
 ```typescript
 ChatState {
   // Chat summary fields, inlined directly (mirrored into SessionState.chats)

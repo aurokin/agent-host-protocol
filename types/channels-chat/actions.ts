@@ -9,6 +9,7 @@ import type { StringOrMarkdown, FileEditCollection, UsageInfo, URI } from '../co
 import type { Changeset } from '../channels-changeset/state.js';
 import type { McpAuthRequirement } from '../channels-session/state.js';
 import type {
+  BackgroundWork,
   Message,
   ResponsePart,
   ToolCallResult,
@@ -547,6 +548,32 @@ export interface ChatActivityChangedAction {
 }
 
 /**
+ * Adds or replaces a {@link BackgroundWork} entry by `id`, independently of turn
+ * state. Hosts mirror the resulting list through `session/chatUpdated`.
+ *
+ * @category Chat Actions
+ * @version 1
+ */
+export interface ChatBackgroundWorkSetAction {
+  type: ActionType.ChatBackgroundWorkSet;
+  /** The complete entry. */
+  work: BackgroundWork;
+}
+
+/**
+ * Removes finished or no-longer-tracked background work; unknown IDs are a no-op.
+ * Hosts mirror the resulting list through `session/chatUpdated`.
+ *
+ * @category Chat Actions
+ * @version 1
+ */
+export interface ChatBackgroundWorkRemovedAction {
+  type: ActionType.ChatBackgroundWorkRemoved;
+  /** The {@link BackgroundWorkBase.id | id} of the entry to remove. */
+  id: string;
+}
+
+/**
  * The {@link Changeset | catalogue of changesets} the agent host advertises
  * for this chat changed. Replaces
  * {@link ChatState.changesets | `state.changesets`} entirely
@@ -886,6 +913,8 @@ export type ChatAction =
   | ChatErrorAction
   | ChatTurnResumeAction
   | ChatActivityChangedAction
+  | ChatBackgroundWorkSetAction
+  | ChatBackgroundWorkRemovedAction
   | ChatChangesetsChangedAction
   | ChatWorkingDirectorySetAction
   | ChatWorkingDirectoryRemovedAction

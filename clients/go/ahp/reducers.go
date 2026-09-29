@@ -323,6 +323,16 @@ func sessionInputRequestID(r ahptypes.SessionInputRequest) (string, bool) {
 	return "", false
 }
 
+func backgroundWorkID(w ahptypes.BackgroundWork) (string, bool) {
+	switch v := w.Value.(type) {
+	case *ahptypes.BackgroundShellWork:
+		return v.Id, true
+	case *ahptypes.BackgroundSubagentWork:
+		return v.Id, true
+	}
+	return "", false
+}
+
 func childCustomizationID(c ahptypes.ChildCustomization) (string, bool) {
 	switch v := c.Value.(type) {
 	case *ahptypes.AgentCustomization:
@@ -559,6 +569,36 @@ func ApplyActionToChat(state *ahptypes.ChatState, action ahptypes.StateAction) R
 	case *ahptypes.ChatActivityChangedAction:
 		state.Activity = a.Activity
 		return ReduceOutcomeApplied
+	case *ahptypes.ChatBackgroundWorkSetAction:
+		id, ok := backgroundWorkID(a.Work)
+		if !ok {
+			return ReduceOutcomeNoOp
+		}
+		if state.BackgroundWork == nil {
+			work := []ahptypes.BackgroundWork{}
+			state.BackgroundWork = &work
+		}
+		work := *state.BackgroundWork
+		for i := range work {
+			if got, ok := backgroundWorkID(work[i]); ok && got == id {
+				work[i] = a.Work
+				return ReduceOutcomeApplied
+			}
+		}
+		*state.BackgroundWork = append(work, a.Work)
+		return ReduceOutcomeApplied
+	case *ahptypes.ChatBackgroundWorkRemovedAction:
+		if state.BackgroundWork == nil {
+			return ReduceOutcomeNoOp
+		}
+		work := *state.BackgroundWork
+		for i := range work {
+			if got, ok := backgroundWorkID(work[i]); ok && got == a.Id {
+				*state.BackgroundWork = append(work[:i], work[i+1:]...)
+				return ReduceOutcomeApplied
+			}
+		}
+		return ReduceOutcomeNoOp
 	case *ahptypes.ChatChangesetsChangedAction:
 		if a.Changesets == nil {
 			state.Changesets = nil
@@ -814,6 +854,9 @@ func mergeChatSummaryPartial(summary *ahptypes.ChatSummary, changes ahptypes.Par
 	}
 	if changes.Activity != nil {
 		summary.Activity = changes.Activity
+	}
+	if changes.BackgroundWork != nil {
+		summary.BackgroundWork = changes.BackgroundWork
 	}
 	if changes.ModifiedAt != nil {
 		summary.ModifiedAt = *changes.ModifiedAt

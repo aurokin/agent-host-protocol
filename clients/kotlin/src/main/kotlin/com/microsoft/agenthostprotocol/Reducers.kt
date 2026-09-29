@@ -253,6 +253,13 @@ private fun customizationId(c: Customization): String? = when (c) {
     is CustomizationUnknown -> null
 }
 
+private fun backgroundWorkId(w: BackgroundWork): String? = when (w) {
+    is BackgroundWorkShell -> w.value.id
+    is BackgroundWorkSubagent -> w.value.id
+    // Unknown variants carry an opaque `raw` JSON object — no id to expose.
+    is BackgroundWorkUnknown -> null
+}
+
 private fun sessionInputRequestId(r: SessionInputRequest): String? = when (r) {
     is SessionInputRequestChatInput -> r.value.id
     is SessionInputRequestToolConfirmation -> r.value.id
@@ -587,6 +594,7 @@ public fun sessionReducer(state: SessionState, action: StateAction): SessionStat
                 title = c.title ?: prior.title,
                 status = c.status ?: prior.status,
                 activity = c.activity ?: prior.activity,
+                backgroundWork = c.backgroundWork ?: prior.backgroundWork,
                 modifiedAt = c.modifiedAt ?: prior.modifiedAt,
                 origin = c.origin ?: prior.origin,
                 workingDirectories = c.workingDirectories ?: prior.workingDirectories,
@@ -992,6 +1000,33 @@ public fun chatReducer(state: ChatState, action: StateAction): ChatState = when 
 
     is StateActionChatActivityChanged ->
         state.copy(activity = action.value.activity)
+
+    is StateActionChatBackgroundWorkSet -> {
+        val work = action.value.work
+        val id = backgroundWorkId(work)
+        if (id == null) state else {
+            val list = state.backgroundWork ?: emptyList()
+            val idx = list.indexOfFirst { backgroundWorkId(it) == id }
+            val updated = if (idx < 0) {
+                list + work
+            } else {
+                list.toMutableList().also { it[idx] = work }
+            }
+            state.copy(backgroundWork = updated)
+        }
+    }
+
+    is StateActionChatBackgroundWorkRemoved -> {
+        val list = state.backgroundWork
+        val idx = list?.indexOfFirst { backgroundWorkId(it) == action.value.id } ?: -1
+        if (list == null || idx < 0) {
+            state
+        } else {
+            val next = list.toMutableList()
+            next.removeAt(idx)
+            state.copy(backgroundWork = next)
+        }
+    }
 
     is StateActionChatChangesetsChanged ->
         state.copy(changesets = action.value.changesets)

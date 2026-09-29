@@ -73,6 +73,14 @@ private func refineToolCallContributor(_ current: ToolCallContributor?, _ next: 
 }
 
 /// Extracts the stable `id` of a session input request, or `nil` for unknown variants.
+private func backgroundWorkID(_ w: BackgroundWork) -> String? {
+    switch w {
+    case .shell(let x): return x.id
+    case .subagent(let x): return x.id
+    case .unknown: return nil
+    }
+}
+
 private func sessionInputRequestID(_ r: SessionInputRequest) -> String? {
     switch r {
     case .chatInput(let x): return x.id
@@ -202,6 +210,24 @@ public func chatReducer(state: ChatState, action: StateAction) -> ChatState {
     case .chatActivityChanged(let a):
         var next = state
         next.activity = a.activity
+        return next
+
+    case .chatBackgroundWorkSet(let a):
+        guard let id = backgroundWorkID(a.work) else { return state }
+        var next = state
+        var work = state.backgroundWork ?? []
+        if let idx = work.firstIndex(where: { backgroundWorkID($0) == id }) {
+            work[idx] = a.work
+        } else {
+            work.append(a.work)
+        }
+        next.backgroundWork = work
+        return next
+
+    case .chatBackgroundWorkRemoved(let a):
+        guard let idx = state.backgroundWork?.firstIndex(where: { backgroundWorkID($0) == a.id }) else { return state }
+        var next = state
+        next.backgroundWork?.remove(at: idx)
         return next
 
     case .chatChangesetsChanged(let a):
@@ -1053,6 +1079,7 @@ private func mergeChatSummaryChanges(_ summary: inout ChatSummary, changes: Part
     if let title = changes.title { summary.title = title }
     if let status = changes.status { summary.status = status }
     if let activity = changes.activity { summary.activity = activity }
+    if let work = changes.backgroundWork { summary.backgroundWork = work }
     if let modifiedAt = changes.modifiedAt { summary.modifiedAt = modifiedAt }
     if let origin = changes.origin { summary.origin = origin }
     if let workingDirectories = changes.workingDirectories { summary.workingDirectories = workingDirectories }

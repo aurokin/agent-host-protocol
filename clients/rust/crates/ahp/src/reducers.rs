@@ -57,7 +57,7 @@ use ahp_types::actions::{
     ChatTurnStartedAction, StateAction,
 };
 use ahp_types::state::{
-    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, ChangesetOperationStatus,
+    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, BackgroundWork, ChangesetOperationStatus,
     ChangesetState, ChangesetStatus, ChatInputRequest, ChatState, ChildCustomization,
     ConfirmationOption, Customization, CustomizationEnablement, ErrorResponsePart,
     InputRequestResponsePart, McpServerCustomization, McpServerStartingState, McpServerState,
@@ -483,6 +483,14 @@ fn session_input_request_id(r: &SessionInputRequest) -> Option<&str> {
     }
 }
 
+fn background_work_id(w: &BackgroundWork) -> Option<&str> {
+    match w {
+        BackgroundWork::Shell(x) => Some(x.id.as_str()),
+        BackgroundWork::Subagent(x) => Some(x.id.as_str()),
+        BackgroundWork::Unknown(v) => v.get("id").and_then(serde_json::Value::as_str),
+    }
+}
+
 fn child_id_of(c: &ChildCustomization) -> Option<&str> {
     match c {
         ChildCustomization::Agent(x) => Some(x.id.as_str()),
@@ -737,6 +745,9 @@ pub fn apply_action_to_session(state: &mut SessionState, action: &StateAction) -
             }
             if let Some(activity) = &a.changes.activity {
                 chat.activity = Some(activity.clone());
+            }
+            if let Some(work) = &a.changes.background_work {
+                chat.background_work = Some(work.clone());
             }
             if let Some(modified_at) = &a.changes.modified_at {
                 chat.modified_at = modified_at.clone();
@@ -1117,6 +1128,34 @@ pub fn apply_action_to_chat(state: &mut ChatState, action: &StateAction) -> Redu
         }
         StateAction::ChatActivityChanged(a) => {
             state.activity = a.activity.clone();
+            ReduceOutcome::Applied
+        }
+        StateAction::ChatBackgroundWorkSet(a) => {
+            let Some(action_id) = background_work_id(&a.work) else {
+                return ReduceOutcome::NoOp;
+            };
+            let list = state.background_work.get_or_insert_with(Vec::new);
+            if let Some(idx) = list
+                .iter()
+                .position(|w| background_work_id(w) == Some(action_id))
+            {
+                list[idx] = a.work.clone();
+            } else {
+                list.push(a.work.clone());
+            }
+            ReduceOutcome::Applied
+        }
+        StateAction::ChatBackgroundWorkRemoved(a) => {
+            let Some(list) = state.background_work.as_mut() else {
+                return ReduceOutcome::NoOp;
+            };
+            let Some(idx) = list
+                .iter()
+                .position(|w| background_work_id(w) == Some(a.id.as_str()))
+            else {
+                return ReduceOutcome::NoOp;
+            };
+            list.remove(idx);
             ReduceOutcome::Applied
         }
         StateAction::ChatChangesetsChanged(a) => {
@@ -2221,6 +2260,7 @@ mod tests {
             title: String::new(),
             status: SessionStatus::Idle.bits(),
             activity: None,
+            background_work: None,
             modified_at: "1970-01-01T00:00:00.000Z".into(),
             origin: None,
             interactivity: None,
@@ -2378,6 +2418,7 @@ mod tests {
             title: "c1".into(),
             status: SessionStatus::Idle.bits(),
             activity: None,
+            background_work: None,
             modified_at: "1970-01-01T00:00:00.000Z".into(),
             origin: None,
             interactivity: None,

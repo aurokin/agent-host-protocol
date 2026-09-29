@@ -4075,6 +4075,13 @@
           "type": "string",
           "description": "Human-readable description of what the chat is currently doing"
         },
+        "backgroundWork": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BackgroundWork"
+          },
+          "description": "Work running outside the current turn that will resume this chat when it\nfinishes, such as background shells and subagents. Independent of turn state."
+        },
         "modifiedAt": {
           "type": "string",
           "description": "Last modification timestamp (ISO 8601, e.g. `\"2025-03-10T18:42:03.123Z\"`)"
@@ -4165,6 +4172,13 @@
           "type": "string",
           "description": "Human-readable description of what the chat is currently doing"
         },
+        "backgroundWork": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BackgroundWork"
+          },
+          "description": "Background work, mirrored from {@link ChatState.backgroundWork}."
+        },
         "modifiedAt": {
           "type": "string",
           "description": "Last modification timestamp (ISO 8601, e.g. `\"2025-03-10T18:42:03.123Z\"`)"
@@ -4190,6 +4204,127 @@
         "title",
         "status",
         "modifiedAt"
+      ]
+    },
+    "BackgroundWorkBase": {
+      "type": "object",
+      "description": "Fields common to every {@link BackgroundWork} variant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of this entry, unique within the owning chat across all kinds.\nThe host derives it however it likes (for example from the kind plus the\nagent's own task id); consumers MUST treat it as opaque. It is the key for\nthe `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert\nconvention."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label, such as the command's purpose or the subagent's name."
+        },
+        "status": {
+          "$ref": "#/$defs/BackgroundWorkStatus",
+          "description": "Current activity of the unfinished work."
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the work started."
+        },
+        "_meta": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "status",
+        "startedAt"
+      ]
+    },
+    "BackgroundShellWork": {
+      "type": "object",
+      "description": "A shell command continuing outside its initiating tool call.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of this entry, unique within the owning chat across all kinds.\nThe host derives it however it likes (for example from the kind plus the\nagent's own task id); consumers MUST treat it as opaque. It is the key for\nthe `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert\nconvention."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label, such as the command's purpose or the subagent's name."
+        },
+        "status": {
+          "$ref": "#/$defs/BackgroundWorkStatus",
+          "description": "Current activity of the unfinished work."
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the work started."
+        },
+        "_meta": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+        },
+        "kind": {
+          "const": "shell"
+        },
+        "command": {
+          "type": "string",
+          "description": "Command line, displayed as plain text."
+        },
+        "terminal": {
+          "$ref": "#/$defs/URI",
+          "description": "Terminal channel carrying this shell's output, when the host provides one."
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "status",
+        "startedAt",
+        "kind",
+        "command"
+      ]
+    },
+    "BackgroundSubagentWork": {
+      "type": "object",
+      "description": "A subagent running in the background. Its own state lives in its chat.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of this entry, unique within the owning chat across all kinds.\nThe host derives it however it likes (for example from the kind plus the\nagent's own task id); consumers MUST treat it as opaque. It is the key for\nthe `chat/backgroundWorkSet` / `chat/backgroundWorkRemoved` upsert\nconvention."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable label, such as the command's purpose or the subagent's name."
+        },
+        "status": {
+          "$ref": "#/$defs/BackgroundWorkStatus",
+          "description": "Current activity of the unfinished work."
+        },
+        "startedAt": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the work started."
+        },
+        "_meta": {
+          "type": "object",
+          "additionalProperties": {},
+          "description": "Provider-specific metadata, such as how a shell's lifetime is tied to its agent."
+        },
+        "kind": {
+          "const": "subagent"
+        },
+        "chat": {
+          "$ref": "#/$defs/URI",
+          "description": "The subagent's chat."
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "status",
+        "startedAt",
+        "kind",
+        "chat"
       ]
     },
     "SideChatSelection": {
@@ -7538,6 +7673,13 @@
               "type": "string",
               "description": "Human-readable description of what the chat is currently doing"
             },
+            "backgroundWork": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/BackgroundWork"
+              },
+              "description": "Background work, mirrored from {@link ChatState.backgroundWork}."
+            },
             "modifiedAt": {
               "type": "string",
               "description": "Last modification timestamp (ISO 8601, e.g. `\"2025-03-10T18:42:03.123Z\"`)"
@@ -8655,6 +8797,40 @@
       },
       "required": [
         "type"
+      ]
+    },
+    "ChatBackgroundWorkSetAction": {
+      "type": "object",
+      "description": "Adds or replaces a {@link BackgroundWork} entry by `id`, independently of turn\nstate. Hosts mirror the resulting list through `session/chatUpdated`.",
+      "properties": {
+        "type": {
+          "const": "chat/backgroundWorkSet"
+        },
+        "work": {
+          "$ref": "#/$defs/BackgroundWork",
+          "description": "The complete entry."
+        }
+      },
+      "required": [
+        "type",
+        "work"
+      ]
+    },
+    "ChatBackgroundWorkRemovedAction": {
+      "type": "object",
+      "description": "Removes finished or no-longer-tracked background work; unknown IDs are a no-op.\nHosts mirror the resulting list through `session/chatUpdated`.",
+      "properties": {
+        "type": {
+          "const": "chat/backgroundWorkRemoved"
+        },
+        "id": {
+          "type": "string",
+          "description": "The {@link BackgroundWorkBase.id | id} of the entry to remove."
+        }
+      },
+      "required": [
+        "type",
+        "id"
       ]
     },
     "ChatChangesetsChangedAction": {
@@ -9872,6 +10048,12 @@
           "$ref": "#/$defs/ChatActivityChangedAction"
         },
         {
+          "$ref": "#/$defs/ChatBackgroundWorkSetAction"
+        },
+        {
+          "$ref": "#/$defs/ChatBackgroundWorkRemovedAction"
+        },
+        {
           "$ref": "#/$defs/ChatChangesetsChangedAction"
         },
         {
@@ -10491,6 +10673,25 @@
       ],
       "type": "string",
       "description": "Why an MCP server is currently in the {@link McpServerStatus.AuthRequired}\nstate. Mirrors the three failure modes defined by the\n[MCP authorization spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md)."
+    },
+    "BackgroundWork": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BackgroundShellWork"
+        },
+        {
+          "$ref": "#/$defs/BackgroundSubagentWork"
+        }
+      ],
+      "description": "Work running outside the current turn that will resume the owning chat when\nit finishes. Clients that don't recognize a `kind` should keep the entry and\nmay render it from the common fields."
+    },
+    "BackgroundWorkStatus": {
+      "enum": [
+        "running",
+        "idle"
+      ],
+      "type": "string",
+      "description": "Activity of background work that has not finished."
     },
     "ChatInputQuestion": {
       "oneOf": [

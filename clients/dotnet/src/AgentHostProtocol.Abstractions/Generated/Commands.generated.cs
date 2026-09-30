@@ -31,6 +31,18 @@ public enum ChatSourceKind
     SideChat,
 }
 
+/// <summary>Destination kind for an atomic chat move.</summary>
+[JsonConverter(typeof(WireEnumConverter<ChatMoveDestinationKind>))]
+public enum ChatMoveDestinationKind
+{
+    /// <summary>Move the source chat subtree into an existing session.</summary>
+    [WireValue("session")]
+    Session,
+    /// <summary>Move the source chat subtree into a newly allocated session.</summary>
+    [WireValue("newSession")]
+    NewSession,
+}
+
 /// <summary>Encoding of fetched content data.</summary>
 [JsonConverter(typeof(WireEnumConverter<ContentEncoding>))]
 public enum ContentEncoding
@@ -640,6 +652,82 @@ public sealed record DisposeChatParams
     [JsonPropertyName("_meta")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Dictionary<string, JsonElement>? Meta { get; init; }
+}
+
+/// <summary>Moves a chat within or into an existing session.</summary>
+public sealed record ChatMoveToSessionDestination
+{
+    /// <summary>Discriminant</summary>
+    public ChatMoveDestinationKind Kind { get; init; }
+
+    /// <summary>Destination session URI.</summary>
+    public required string Session { get; init; }
+
+    /// <summary>Chat after which to place the requested chat.
+    ///
+    /// The anchor MUST be a different chat in the destination session. When
+    /// omitted, the requested chat is placed at the beginning of the catalog.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? After { get; init; }
+}
+
+/// <summary>Moves a top-level chat subtree into a newly allocated session.</summary>
+public sealed record ChatMoveToNewSessionDestination
+{
+    /// <summary>Discriminant</summary>
+    public ChatMoveDestinationKind Kind { get; init; }
+}
+
+/// <summary>Atomically moves a host-authorized chat within or between sessions.
+///
+/// The source is the chat named by `channel`. When a `session` destination is
+/// the source's current session, only the requested entry is repositioned in
+/// that session's public chat catalog. When it names another session, the host
+/// transfers the requested chat and its complete host-managed descendant
+/// hierarchy. The optional `after` anchor positions the requested chat in the
+/// destination catalog; when omitted, the requested chat is placed first.
+///
+/// A `newSession` destination allocates a session, transfers the complete
+/// hierarchy, and makes the requested chat that session's non-movable default
+/// chat. The host owns descendant relationships; AHP does not expose them as
+/// chat state.
+///
+/// Clients MUST only request a move when the source chat advertises
+/// `movable: true` in its `ChatState` or `ChatSummary`. This is structural
+/// eligibility, not a guarantee that request-specific validation will succeed.
+///
+/// The host MUST validate the complete operation before committing it and MAY
+/// reject unsupported destinations or transient source conditions. At minimum,
+/// the source MUST exist and advertise `movable: true`; the destination and
+/// optional anchor MUST resolve; and the source MUST NOT anchor itself.
+/// Rejection leaves ownership, catalog order, chat state, and root summaries
+/// unchanged.
+///
+/// On success every moved chat keeps its URI, state, and immutable
+/// `ChatOrigin`. The host commits ownership and catalog order before publishing
+/// `session/chatRemoved`, `session/chatAdded`, `session/chatsReordered`, and
+/// root summary updates as applicable. Session and root snapshots are the
+/// durable recovery path after reconnect or an uncertain response.</summary>
+public sealed record MoveChatParams
+{
+    /// <summary>Source chat URI.</summary>
+    public required string Channel { get; init; }
+
+    /// <summary>Optional JSON-serializable metadata associated with this request.
+    /// Receivers MUST ignore keys they do not understand.</summary>
+    [JsonPropertyName("_meta")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, JsonElement>? Meta { get; init; }
+
+    /// <summary>Atomic move destination.</summary>
+    public required ChatMoveDestination Destination { get; init; }
+}
+
+/// <summary>Result of an atomic chat move.</summary>
+public sealed record MoveChatResult
+{
+    /// <summary>Authoritative owning session URI after the move.</summary>
+    public required string Session { get; init; }
 }
 
 /// <summary>Returns a list of session summaries. Used to populate session lists and sidebars.
@@ -1724,6 +1812,31 @@ internal sealed class ChatSourceConverter : UnionConverter<ChatSource>
         ["sideChat"] = typeof(SideChatSource),
             },
             allowUnknown: false)
+    {
+    }
+}
+[JsonConverter(typeof(ChatMoveDestinationConverter))]
+public sealed class ChatMoveDestination : AhpUnion
+{
+    /// <summary>Creates an empty ChatMoveDestination (no active variant).</summary>
+    public ChatMoveDestination() { }
+
+    /// <summary>Creates a ChatMoveDestination wrapping the given variant value.</summary>
+    public ChatMoveDestination(object? value) : base(value) { }
+}
+
+/// <summary>System.Text.Json converter for the ChatMoveDestination discriminated union.</summary>
+internal sealed class ChatMoveDestinationConverter : UnionConverter<ChatMoveDestination>
+{
+    public ChatMoveDestinationConverter()
+        : base(
+            discriminator: "kind",
+            variants: new Dictionary<string, Type>
+            {
+        ["session"] = typeof(ChatMoveToSessionDestination),
+        ["newSession"] = typeof(ChatMoveToNewSessionDestination),
+            },
+            allowUnknown: true)
     {
     }
 }

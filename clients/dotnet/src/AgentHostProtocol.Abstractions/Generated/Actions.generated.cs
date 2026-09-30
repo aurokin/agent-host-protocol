@@ -27,6 +27,8 @@ public enum ActionType
     SessionChatRemoved,
     [WireValue("session/chatUpdated")]
     SessionChatUpdated,
+    [WireValue("session/chatsReordered")]
+    SessionChatsReordered,
     [WireValue("session/defaultChatChanged")]
     SessionDefaultChatChanged,
     [WireValue("chat/turnStarted")]
@@ -63,6 +65,8 @@ public enum ActionType
     ChatTurnResume,
     [WireValue("chat/activityChanged")]
     ChatActivityChanged,
+    [WireValue("chat/movableChanged")]
+    ChatMovableChanged,
     [WireValue("chat/changesetsChanged")]
     ChatChangesetsChanged,
     [WireValue("chat/workingDirectorySet")]
@@ -1125,6 +1129,21 @@ public sealed record SessionChatUpdatedAction
     public required PartialChatSummary Changes { get; init; }
 }
 
+/// <summary>The owning session's authoritative chat catalog order changed.
+///
+/// Host-emitted convergence signal; it never originates from a client
+/// dispatch. `chats` is the complete resulting order and MUST contain every
+/// chat currently in the session exactly once. Reducers replace the catalog
+/// order while preserving each matching summary. Invalid or incomplete orders
+/// are ignored.</summary>
+public sealed record SessionChatsReorderedAction
+{
+    public ActionType Type { get; init; }
+
+    /// <summary>Every chat URI in authoritative catalog order.</summary>
+    public required List<string> Chats { get; init; }
+}
+
 /// <summary>The default chat input-routing hint for this session changed.</summary>
 public sealed record SessionDefaultChatChangedAction
 {
@@ -1703,6 +1722,21 @@ public sealed record ChatActivityChangedAction
     /// <summary>Human-readable description of current activity; omit or set `undefined` to clear</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Activity { get; init; }
+}
+
+/// <summary>Whether this chat is structurally eligible to be the source of `moveChat`
+/// changed.
+///
+/// The host is authoritative and MUST also update the owning session's chat
+/// catalog with `session/chatUpdated` so `ChatSummary.movable` stays in sync.
+/// A chat referenced by its owning session's `defaultChat` MUST always carry
+/// `movable: false`.</summary>
+public sealed record ChatMovableChangedAction
+{
+    public ActionType Type { get; init; }
+
+    /// <summary>Whether this chat is structurally eligible to be moved.</summary>
+    public bool Movable { get; init; }
 }
 
 /// <summary>The {@link Changeset | catalogue of changesets} the agent host advertises
@@ -2586,6 +2620,13 @@ public sealed record PartialChatSummary
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ChatOrigin? Origin { get; init; }
 
+    /// <summary>Whether this chat is structurally eligible to be the source of
+    /// `moveChat`. Absence means `false`.
+    ///
+    /// See {@link ChatState.movable} for the full semantics.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? Movable { get; init; }
+
     /// <summary>How the user can interact with this chat. See {@link ChatInteractivity}.
     ///
     /// Supports agent-team patterns where worker chats are read-only or hidden.
@@ -2671,6 +2712,7 @@ internal sealed class StateActionConverter : UnionConverter<StateAction>
         ["session/chatAdded"] = typeof(SessionChatAddedAction),
         ["session/chatRemoved"] = typeof(SessionChatRemovedAction),
         ["session/chatUpdated"] = typeof(SessionChatUpdatedAction),
+        ["session/chatsReordered"] = typeof(SessionChatsReorderedAction),
         ["session/defaultChatChanged"] = typeof(SessionDefaultChatChangedAction),
         ["chat/turnStarted"] = typeof(ChatTurnStartedAction),
         ["chat/delta"] = typeof(ChatDeltaAction),
@@ -2689,6 +2731,7 @@ internal sealed class StateActionConverter : UnionConverter<StateAction>
         ["chat/error"] = typeof(ChatErrorAction),
         ["chat/turnResume"] = typeof(ChatTurnResumeAction),
         ["chat/activityChanged"] = typeof(ChatActivityChangedAction),
+        ["chat/movableChanged"] = typeof(ChatMovableChangedAction),
         ["chat/changesetsChanged"] = typeof(ChatChangesetsChangedAction),
         ["chat/workingDirectorySet"] = typeof(ChatWorkingDirectorySetAction),
         ["chat/workingDirectoryRemoved"] = typeof(ChatWorkingDirectoryRemovedAction),

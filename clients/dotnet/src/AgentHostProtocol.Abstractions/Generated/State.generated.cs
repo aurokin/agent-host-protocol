@@ -1284,11 +1284,10 @@ public sealed class ChatState
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Activity { get; set; }
 
-    /// <summary>Work that keeps running after the tool call that started it returns and
-    /// will resume this chat when it finishes, such as background shells and
+    /// <summary>Work running in the background for this chat, such as shells and
     /// subagents. Only active work is listed: hosts remove an entry once the work
-    /// ends. Entries stay listed whether or not the turn that started them is
-    /// still open.</summary>
+    /// ends. An entry may have been started by an earlier turn rather than the
+    /// {@link ChatState.activeTurn | activeTurn}.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<BackgroundWork>? BackgroundWork { get; set; }
 

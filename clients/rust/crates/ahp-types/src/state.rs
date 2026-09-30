@@ -1928,11 +1928,10 @@ pub struct ChatState {
     /// Human-readable description of what the chat is currently doing
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
-    /// Work that keeps running after the tool call that started it returns and
-    /// will resume this chat when it finishes, such as background shells and
+    /// Work running in the background for this chat, such as shells and
     /// subagents. Only active work is listed: hosts remove an entry once the work
-    /// ends. Entries stay listed whether or not the turn that started them is
-    /// still open.
+    /// ends. An entry may have been started by an earlier turn rather than the
+    /// {@link ChatState.activeTurn | activeTurn}.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)

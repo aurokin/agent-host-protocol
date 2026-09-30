@@ -2424,7 +2424,7 @@
           "items": {
             "$ref": "#/$defs/BackgroundWork"
           },
-          "description": "Work that keeps running after the tool call that started it returns and\nwill resume this chat when it finishes, such as background shells and\nsubagents. Only active work is listed: hosts remove an entry once the work\nends. Entries stay listed whether or not the turn that started them is\nstill open."
+          "description": "Work running in the background for this chat, such as shells and\nsubagents. Only active work is listed: hosts remove an entry once the work\nends. An entry may have been started by an earlier turn rather than the\n{@link ChatState.activeTurn | activeTurn}."
         },
         "modifiedAt": {
           "type": "string",
@@ -6020,7 +6020,7 @@
           "$ref": "#/$defs/BackgroundSubagentWork"
         }
       ],
-      "description": "Work that keeps running after the tool call that started it returns and will\nresume the owning chat when it finishes. Clients that don't recognize a\n`kind` should keep the entry and may render it from the common fields."
+      "description": "Work running in the background for a chat, such as a shell or a subagent.\nClients that don't recognize a `kind` should keep the entry and may render it\nfrom the common fields."
     },
     "ChatOrigin": {
       "oneOf": [

@@ -141,9 +141,8 @@ For example, `(status & SessionStatus.InProgress) !== 0` is true for both `InPro
 
 Subscribable on a [Chat Channel](/specification/chat-channel) at `ahp-chat:/<cid>`. A session is a catalog of chats (`SessionState.chats`); each chat carries the per-conversation state — the turn history, the active turn and its streaming response parts (including live input requests), tool calls, steering/queued messages, and the user's in-progress draft. A session starts with a default chat (`SessionState.defaultChat`); hosts advertising the `multipleChats` capability let clients open more via `createChat`.
 
-`backgroundWork` lists work that keeps running after the tool call that started it
-returns and will resume the chat when it finishes, such as background shells and
-subagents.
+`backgroundWork` lists work running in the background for the chat, such as shells
+and subagents.
 Hosts publish complete entries with `chat/backgroundWorkSet` and remove them with
 `chat/backgroundWorkRemoved` when they finish or are no longer tracked. Entry IDs are
 opaque, unique within a chat across all kinds, and scoped to that chat. Hosts mirror

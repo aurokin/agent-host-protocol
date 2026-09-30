@@ -1265,7 +1265,8 @@ type ChatState struct {
 	Activity *string `json:"activity,omitempty"`
 	// Work that keeps running after the tool call that started it returns and
 	// will resume this chat when it finishes, such as background shells and
-	// subagents. Entries stay listed whether or not the turn that started them is
+	// subagents. Only active work is listed: hosts remove an entry once the work
+	// ends. Entries stay listed whether or not the turn that started them is
 	// still open.
 	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)

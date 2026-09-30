@@ -21,6 +21,7 @@ import type {
   SessionChatAddedAction,
   SessionChatRemovedAction,
   SessionChatUpdatedAction,
+  SessionChatsReorderedAction,
   SessionDefaultChatChangedAction,
   SessionTitleChangedAction,
   SessionServerToolsChangedAction,
@@ -67,6 +68,7 @@ import type {
   ChatActivityChangedAction,
   ChatBackgroundWorkSetAction,
   ChatBackgroundWorkRemovedAction,
+  ChatMovableChangedAction,
   ChatChangesetsChangedAction,
   ChatWorkingDirectorySetAction,
   ChatWorkingDirectoryRemovedAction,
@@ -150,6 +152,7 @@ export const enum ActionType {
   SessionChatAdded = 'session/chatAdded',
   SessionChatRemoved = 'session/chatRemoved',
   SessionChatUpdated = 'session/chatUpdated',
+  SessionChatsReordered = 'session/chatsReordered',
   SessionDefaultChatChanged = 'session/defaultChatChanged',
   ChatTurnStarted = 'chat/turnStarted',
   ChatDelta = 'chat/delta',
@@ -170,6 +173,7 @@ export const enum ActionType {
   ChatActivityChanged = 'chat/activityChanged',
   ChatBackgroundWorkSet = 'chat/backgroundWorkSet',
   ChatBackgroundWorkRemoved = 'chat/backgroundWorkRemoved',
+  ChatMovableChanged = 'chat/movableChanged',
   ChatChangesetsChanged = 'chat/changesetsChanged',
   ChatWorkingDirectorySet = 'chat/workingDirectorySet',
   ChatWorkingDirectoryRemoved = 'chat/workingDirectoryRemoved',
@@ -289,6 +293,7 @@ export type StateAction =
   | SessionChatAddedAction
   | SessionChatRemovedAction
   | SessionChatUpdatedAction
+  | SessionChatsReorderedAction
   | SessionDefaultChatChangedAction
   | SessionTitleChangedAction
   | SessionServerToolsChangedAction
@@ -332,6 +337,7 @@ export type StateAction =
   | ChatActivityChangedAction
   | ChatBackgroundWorkSetAction
   | ChatBackgroundWorkRemovedAction
+  | ChatMovableChangedAction
   | ChatChangesetsChangedAction
   | ChatWorkingDirectorySetAction
   | ChatWorkingDirectoryRemovedAction

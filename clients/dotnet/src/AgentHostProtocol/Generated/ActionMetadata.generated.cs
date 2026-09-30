@@ -112,6 +112,9 @@ internal static class GeneratedActionMetadata
             case ChatIsArchivedChangedAction value:
                 actionType = value.Type;
                 return true;
+            case ChatMovableChangedAction value:
+                actionType = value.Type;
+                return true;
             case ChatPendingMessageRemovedAction value:
                 actionType = value.Type;
                 return true;
@@ -212,6 +215,9 @@ internal static class GeneratedActionMetadata
                 actionType = value.Type;
                 return true;
             case SessionChatRemovedAction value:
+                actionType = value.Type;
+                return true;
+            case SessionChatsReorderedAction value:
                 actionType = value.Type;
                 return true;
             case SessionChatUpdatedAction value:
@@ -415,6 +421,7 @@ internal static class GeneratedActionMetadata
             ActionType.ChatInputCompleted => "chat/inputCompleted",
             ActionType.ChatInputRequested => "chat/inputRequested",
             ActionType.ChatIsArchivedChanged => "chat/isArchivedChanged",
+            ActionType.ChatMovableChanged => "chat/movableChanged",
             ActionType.ChatPendingMessageRemoved => "chat/pendingMessageRemoved",
             ActionType.ChatPendingMessageSet => "chat/pendingMessageSet",
             ActionType.ChatQueuedMessagesReordered => "chat/queuedMessagesReordered",
@@ -449,6 +456,7 @@ internal static class GeneratedActionMetadata
             ActionType.SessionChangesetsChanged => "session/changesetsChanged",
             ActionType.SessionChatAdded => "session/chatAdded",
             ActionType.SessionChatRemoved => "session/chatRemoved",
+            ActionType.SessionChatsReordered => "session/chatsReordered",
             ActionType.SessionChatUpdated => "session/chatUpdated",
             ActionType.SessionConfigChanged => "session/configChanged",
             ActionType.SessionCreationFailed => "session/creationFailed",

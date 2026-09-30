@@ -12,6 +12,7 @@ import type {
   SessionChatAddedAction,
   SessionChatRemovedAction,
   SessionChatUpdatedAction,
+  SessionChatsReorderedAction,
   SessionDefaultChatChangedAction,
   SessionTitleChangedAction,
   SessionServerToolsChangedAction,
@@ -55,6 +56,7 @@ import type {
   ChatActivityChangedAction,
   ChatBackgroundWorkSetAction,
   ChatBackgroundWorkRemovedAction,
+  ChatMovableChangedAction,
   ChatChangesetsChangedAction,
   ChatWorkingDirectorySetAction,
   ChatWorkingDirectoryRemovedAction,
@@ -137,6 +139,7 @@ export type SessionAction =
   | SessionChatAddedAction
   | SessionChatRemovedAction
   | SessionChatUpdatedAction
+  | SessionChatsReorderedAction
   | SessionDefaultChatChangedAction
   | SessionTitleChangedAction
   | SessionServerToolsChangedAction
@@ -187,6 +190,7 @@ export type ServerSessionAction =
   | SessionChatAddedAction
   | SessionChatRemovedAction
   | SessionChatUpdatedAction
+  | SessionChatsReorderedAction
   | SessionDefaultChatChangedAction
   | SessionServerToolsChangedAction
   | SessionInputNeededSetAction
@@ -221,6 +225,7 @@ export type ChatAction =
   | ChatActivityChangedAction
   | ChatBackgroundWorkSetAction
   | ChatBackgroundWorkRemovedAction
+  | ChatMovableChangedAction
   | ChatChangesetsChangedAction
   | ChatWorkingDirectorySetAction
   | ChatWorkingDirectoryRemovedAction
@@ -273,6 +278,7 @@ export type ServerChatAction =
   | ChatActivityChangedAction
   | ChatBackgroundWorkSetAction
   | ChatBackgroundWorkRemovedAction
+  | ChatMovableChangedAction
   | ChatChangesetsChangedAction
   | ChatUsageAction
   | ChatReasoningAction
@@ -438,6 +444,7 @@ export const IS_CLIENT_DISPATCHABLE: { readonly [K in StateAction['type']]: bool
   [ActionType.SessionChatAdded]: false,
   [ActionType.SessionChatRemoved]: false,
   [ActionType.SessionChatUpdated]: false,
+  [ActionType.SessionChatsReordered]: false,
   [ActionType.SessionDefaultChatChanged]: false,
   [ActionType.SessionTitleChanged]: true,
   [ActionType.SessionServerToolsChanged]: false,
@@ -481,6 +488,7 @@ export const IS_CLIENT_DISPATCHABLE: { readonly [K in StateAction['type']]: bool
   [ActionType.ChatActivityChanged]: false,
   [ActionType.ChatBackgroundWorkSet]: false,
   [ActionType.ChatBackgroundWorkRemoved]: false,
+  [ActionType.ChatMovableChanged]: false,
   [ActionType.ChatChangesetsChanged]: false,
   [ActionType.ChatWorkingDirectorySet]: true,
   [ActionType.ChatWorkingDirectoryRemoved]: true,

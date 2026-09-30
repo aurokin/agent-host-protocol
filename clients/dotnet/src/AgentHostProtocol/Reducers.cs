@@ -899,6 +899,8 @@ public static class Reducers
                 return ApplySessionChatRemoved(state, a);
             case SessionChatUpdatedAction a:
                 return ApplySessionChatUpdated(state, a);
+            case SessionChatsReorderedAction a:
+                return ApplySessionChatsReordered(state, a);
             case SessionDefaultChatChangedAction a:
                 state.DefaultChat = a.DefaultChat;
                 return ReduceOutcome.Applied;
@@ -1004,6 +1006,9 @@ public static class Reducers
                     state.BackgroundWork!.RemoveAt(idx);
                     return ReduceOutcome.Applied;
                 }
+            case ChatMovableChangedAction a:
+                state.Movable = a.Movable;
+                return ReduceOutcome.Applied;
             case ChatChangesetsChangedAction a:
                 state.Changesets = CopyList(a.Changesets);
                 return ReduceOutcome.Applied;
@@ -1879,6 +1884,47 @@ public static class Reducers
         // removed it, re-expressing the primary as `WorkingDirectories[0]` under
         // `MultipleWorkingDirectoriesCapability.ImmutablePrimary`. The set itself is
         // merged above, as the rust, go, kotlin, and swift clients also do.
+        return ReduceOutcome.Applied;
+    }
+
+    private static ReduceOutcome ApplySessionChatsReordered(SessionState state, SessionChatsReorderedAction a)
+    {
+        if (a.Chats.Count != state.Chats.Count || new HashSet<string>(a.Chats).Count != state.Chats.Count)
+        {
+            return ReduceOutcome.NoOp;
+        }
+
+        bool unchanged = true;
+        for (int i = 0; i < a.Chats.Count; i++)
+        {
+            if (a.Chats[i] != state.Chats[i].Resource)
+            {
+                unchanged = false;
+                break;
+            }
+        }
+        if (unchanged)
+        {
+            return ReduceOutcome.NoOp;
+        }
+
+        Dictionary<string, ChatSummary> summaries = new(state.Chats.Count);
+        foreach (ChatSummary summary in state.Chats)
+        {
+            summaries[summary.Resource] = summary;
+        }
+        List<ChatSummary> reordered = new(a.Chats.Count);
+        foreach (string resource in a.Chats)
+        {
+            if (!summaries.TryGetValue(resource, out ChatSummary? summary))
+            {
+                return ReduceOutcome.NoOp;
+            }
+
+            reordered.Add(summary);
+        }
+
+        state.Chats = reordered;
         return ReduceOutcome.Applied;
     }
 

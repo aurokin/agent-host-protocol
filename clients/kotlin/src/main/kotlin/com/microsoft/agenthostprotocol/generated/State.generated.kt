@@ -1394,7 +1394,8 @@ data class AgentCapabilities(
      * clients MUST NOT call `createChat` to open chats beyond the default one the
      * session starts with. An empty object `{}` advertises multi-chat without
      * source-based creation; set {@link MultipleChatsCapability.fork} or
-     * {@link MultipleChatsCapability.sideChat} to allow the corresponding mode.
+     * {@link MultipleChatsCapability.sideChat} to allow the corresponding
+     * creation mode.
      */
     val multipleChats: MultipleChatsCapability? = null,
     /**
@@ -1662,6 +1663,15 @@ data class ChatState(
      */
     val origin: ChatOrigin? = null,
     /**
+     * Whether this chat is eligible to be the source of `moveChat`, including
+     * same-session ordering.
+     *
+     * The host is authoritative. Absence means `false`. A `true` value does not
+     * guarantee that a particular request will succeed. A chat referenced by its
+     * owning session's `defaultChat` MUST NOT be movable.
+     */
+    val movable: Boolean? = null,
+    /**
      * How the user can interact with this chat. See {@link ChatInteractivity}.
      *
      * Supports agent-team patterns where worker chats are read-only or hidden.
@@ -1777,6 +1787,13 @@ data class ChatSummary(
      */
     val origin: ChatOrigin? = null,
     /**
+     * Whether this chat is structurally eligible to be the source of
+     * `moveChat`. Absence means `false`.
+     *
+     * See {@link ChatState.movable} for the full semantics.
+     */
+    val movable: Boolean? = null,
+    /**
      * How the user can interact with this chat. See {@link ChatInteractivity}.
      *
      * Supports agent-team patterns where worker chats are read-only or hidden.
@@ -1881,13 +1898,15 @@ data class SessionState(
     val activeClients: List<SessionActiveClient>,
     /**
      * Catalog of chats in this session.
+     *
+     * Order is host-authoritative and durable. Catalog order is independent of
+     * `defaultChat`.
      */
     val chats: List<ChatSummary>,
     /**
      * The chat that receives input when the user addresses the session without
-     * selecting a specific chat. This is a UI routing hint, not a hierarchy
-     * marker — chats remain equal peers at the protocol level. Hosts MAY change
-     * this over the session's lifetime.
+     * selecting a specific chat. This routing designation does not determine the
+     * chat's catalog position. Hosts MAY change it over the session's lifetime.
      */
     val defaultChat: String? = null,
     /**
@@ -2232,15 +2251,11 @@ data class SessionSummary(
     @SerialName("_meta")
     val meta: Map<String, JsonElement>? = null,
     /**
-     * Lightweight ordered chat catalog for session-list presentation.
-     *
-     * This intentionally omits volatile chat state such as status and activity,
-     * while retaining interactivity so generic clients can hide chats or present
-     * them as read-only without subscribing to the session channel.
+     * Lightweight host-authoritative ordered chat catalog.
      */
     val chats: List<SessionChatSummary>? = null,
     /**
-     * Chat that receives input when no specific chat is selected.
+     * Chat that receives input when none is selected, independent of catalog position.
      */
     val defaultChat: String? = null
 )
@@ -2266,7 +2281,16 @@ data class SessionChatSummary(
      * read-only chats. Absence defaults to {@link ChatInteractivity.Full} for
      * backward compatibility.
      */
-    val interactivity: ChatInteractivity? = null
+    val interactivity: ChatInteractivity? = null,
+    /**
+     * Whether this chat has been archived independently of its owning session
+     * (see `chat/isArchivedChanged`).
+     *
+     * Generic clients use this to group or filter archived chats in session
+     * lists without subscribing to the session channel. Absence means the
+     * chat is not archived.
+     */
+    val archived: Boolean? = null
 )
 
 @Serializable

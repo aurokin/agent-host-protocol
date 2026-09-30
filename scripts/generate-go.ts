@@ -1560,6 +1560,7 @@ const ACTION_VARIANTS: {
   { type: 'session/chatAdded', variantName: 'SessionChatAdded', tsInterface: 'SessionChatAddedAction' },
   { type: 'session/chatRemoved', variantName: 'SessionChatRemoved', tsInterface: 'SessionChatRemovedAction' },
   { type: 'session/chatUpdated', variantName: 'SessionChatUpdated', tsInterface: 'SessionChatUpdatedAction' },
+  { type: 'session/chatsReordered', variantName: 'SessionChatsReordered', tsInterface: 'SessionChatsReorderedAction' },
   { type: 'session/defaultChatChanged', variantName: 'SessionDefaultChatChanged', tsInterface: 'SessionDefaultChatChangedAction' },
   { type: 'chat/turnStarted', variantName: 'ChatTurnStarted', tsInterface: 'ChatTurnStartedAction' },
   { type: 'chat/delta', variantName: 'ChatDelta', tsInterface: 'ChatDeltaAction' },
@@ -1580,6 +1581,7 @@ const ACTION_VARIANTS: {
   { type: 'chat/activityChanged', variantName: 'ChatActivityChanged', tsInterface: 'ChatActivityChangedAction' },
   { type: 'chat/backgroundWorkSet', variantName: 'ChatBackgroundWorkSet', tsInterface: 'ChatBackgroundWorkSetAction' },
   { type: 'chat/backgroundWorkRemoved', variantName: 'ChatBackgroundWorkRemoved', tsInterface: 'ChatBackgroundWorkRemovedAction' },
+  { type: 'chat/movableChanged', variantName: 'ChatMovableChanged', tsInterface: 'ChatMovableChangedAction' },
   { type: 'chat/changesetsChanged', variantName: 'ChatChangesetsChanged', tsInterface: 'ChatChangesetsChangedAction' },
   { type: 'session/titleChanged', variantName: 'SessionTitleChanged', tsInterface: 'SessionTitleChangedAction' },
   { type: 'chat/usage', variantName: 'ChatUsage', tsInterface: 'ChatUsageAction' },
@@ -1754,7 +1756,7 @@ function generateActionsFile(project: Project): string {
 
 // ─── Commands File Generator ─────────────────────────────────────────────────
 
-const COMMAND_ENUMS = ['ReconnectResultType', 'ChatSourceKind', 'ContentEncoding', 'CompletionItemKind', 'ResourceType', 'ResourceWriteMode'];
+const COMMAND_ENUMS = ['ReconnectResultType', 'ChatSourceKind', 'ChatMoveDestinationKind', 'ContentEncoding', 'CompletionItemKind', 'ResourceType', 'ResourceWriteMode'];
 
 const COMMAND_STRUCTS: { name: string; omitDiscriminants?: boolean; goName?: string }[] = [
   { name: 'InitializeParams' }, { name: 'InitializeResult' },
@@ -1770,6 +1772,7 @@ const COMMAND_STRUCTS: { name: string; omitDiscriminants?: boolean; goName?: str
   { name: 'CreateSessionParams' },
   { name: 'DisposeSessionParams' },
   { name: 'ForkChatSource' }, { name: 'SideChatSource' }, { name: 'CreateChatParams' }, { name: 'DisposeChatParams' },
+  { name: 'ChatMoveToSessionDestination' }, { name: 'ChatMoveToNewSessionDestination' }, { name: 'MoveChatParams' }, { name: 'MoveChatResult' },
   { name: 'ListSessionsParams' }, { name: 'ListSessionsResult' },
   { name: 'ResourceReadParams' }, { name: 'ResourceReadResult' },
   { name: 'ResourceWriteParams' }, { name: 'ResourceWriteResult' },
@@ -1814,6 +1817,16 @@ const CHAT_SOURCE_UNION: UnionConfig = {
   variants: [
     { variantName: 'Fork', innerType: 'ForkChatSource', wireValue: 'fork' },
     { variantName: 'SideChat', innerType: 'SideChatSource', wireValue: 'sideChat' },
+  ],
+};
+
+const CHAT_MOVE_DESTINATION_UNION: UnionConfig = {
+  name: 'ChatMoveDestination',
+  discriminantField: 'kind',
+  doc: 'Destination of an atomic chat move.',
+  variants: [
+    { variantName: 'Session', innerType: 'ChatMoveToSessionDestination', wireValue: 'session' },
+    { variantName: 'NewSession', innerType: 'ChatMoveToNewSessionDestination', wireValue: 'newSession' },
   ],
 };
 
@@ -1982,11 +1995,16 @@ function generateCommandsFile(project: Project): string {
   lines.push('');
   lines.push(generateFixedDiscriminantMethods('SideChatSource', 'kind', 'sideChat', 'ChatSourceKind'));
   lines.push('');
-
+  lines.push(generateFixedDiscriminantMethods('ChatMoveToSessionDestination', 'kind', 'session', 'ChatMoveDestinationKind'));
+  lines.push('');
+  lines.push(generateFixedDiscriminantMethods('ChatMoveToNewSessionDestination', 'kind', 'newSession', 'ChatMoveDestinationKind'));
+  lines.push('');
   lines.push('// ─── ChatSource Union ─────────────────────────────────────────────────\n');
   lines.push(generateDiscriminatedUnion(project, CHAT_SOURCE_UNION));
   lines.push('');
-
+  lines.push('// ─── ChatMoveDestination Union ────────────────────────────────────────\n');
+  lines.push(generateDiscriminatedUnion(project, CHAT_MOVE_DESTINATION_UNION));
+  lines.push('');
   lines.push('// ─── ReconnectResult Union ────────────────────────────────────────────\n');
   lines.push(generateDiscriminatedUnion(project, RECONNECT_RESULT_UNION));
   lines.push('');
@@ -2345,6 +2363,7 @@ function checkExhaustiveness(project: Project): void {
     'TerminalContentPart',
     'ChatOrigin',
     'ChatSource',
+    'ChatMoveDestination',
     'ChatInputQuestion',
     'ChatInputAnswerValue',
     'ChatInputAnswer',

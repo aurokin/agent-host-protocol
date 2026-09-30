@@ -609,6 +609,17 @@ public fun sessionReducer(state: SessionState, action: StateAction): SessionStat
 
     is StateActionSessionDefaultChatChanged -> state.copy(defaultChat = action.value.defaultChat)
 
+    is StateActionSessionChatsReordered -> {
+        val a = action.value
+        val summaries = state.chats.associateBy { it.resource }
+        if (a.chats.size != state.chats.size || a.chats.toSet().size != state.chats.size) {
+            state
+        } else {
+            val reordered = a.chats.mapNotNull(summaries::get)
+            if (reordered.size != state.chats.size) state else state.copy(chats = reordered)
+        }
+    }
+
     is StateActionSessionTitleChanged -> state.copy(title = action.value.title)
 
     is StateActionSessionIsReadChanged -> state.copy(
@@ -1029,6 +1040,9 @@ public fun chatReducer(state: ChatState, action: StateAction): ChatState = when 
             state.copy(backgroundWork = next)
         }
     }
+
+    is StateActionChatMovableChanged ->
+        state.copy(movable = action.value.movable)
 
     is StateActionChatChangesetsChanged ->
         state.copy(changesets = action.value.changesets)

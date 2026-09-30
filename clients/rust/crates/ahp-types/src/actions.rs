@@ -25,7 +25,6 @@ use crate::state::{
     ToolCallContributor, ToolCallResult, ToolCallRiskAssessment, ToolDefinition, ToolInput,
     ToolResultContent, Turn, UsageInfo,
 };
-
 // ─── ActionType ──────────────────────────────────────────────────────
 
 /// Discriminant values for all state actions.
@@ -38,6 +37,7 @@ pub enum ActionType {
     SessionChatAdded,
     SessionChatRemoved,
     SessionChatUpdated,
+    SessionChatsReordered,
     SessionDefaultChatChanged,
     ChatTurnStarted,
     ChatDelta,
@@ -58,6 +58,7 @@ pub enum ActionType {
     ChatActivityChanged,
     ChatBackgroundWorkSet,
     ChatBackgroundWorkRemoved,
+    ChatMovableChanged,
     ChatChangesetsChanged,
     ChatWorkingDirectorySet,
     ChatWorkingDirectoryRemoved,
@@ -151,6 +152,7 @@ impl serde::Serialize for ActionType {
             Self::SessionChatAdded => serializer.serialize_str("session/chatAdded"),
             Self::SessionChatRemoved => serializer.serialize_str("session/chatRemoved"),
             Self::SessionChatUpdated => serializer.serialize_str("session/chatUpdated"),
+            Self::SessionChatsReordered => serializer.serialize_str("session/chatsReordered"),
             Self::SessionDefaultChatChanged => {
                 serializer.serialize_str("session/defaultChatChanged")
             }
@@ -179,6 +181,7 @@ impl serde::Serialize for ActionType {
             Self::ChatBackgroundWorkRemoved => {
                 serializer.serialize_str("chat/backgroundWorkRemoved")
             }
+            Self::ChatMovableChanged => serializer.serialize_str("chat/movableChanged"),
             Self::ChatChangesetsChanged => serializer.serialize_str("chat/changesetsChanged"),
             Self::ChatWorkingDirectorySet => serializer.serialize_str("chat/workingDirectorySet"),
             Self::ChatWorkingDirectoryRemoved => {
@@ -326,6 +329,7 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "session/chatAdded" => Self::SessionChatAdded,
             "session/chatRemoved" => Self::SessionChatRemoved,
             "session/chatUpdated" => Self::SessionChatUpdated,
+            "session/chatsReordered" => Self::SessionChatsReordered,
             "session/defaultChatChanged" => Self::SessionDefaultChatChanged,
             "chat/turnStarted" => Self::ChatTurnStarted,
             "chat/delta" => Self::ChatDelta,
@@ -346,6 +350,7 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "chat/activityChanged" => Self::ChatActivityChanged,
             "chat/backgroundWorkSet" => Self::ChatBackgroundWorkSet,
             "chat/backgroundWorkRemoved" => Self::ChatBackgroundWorkRemoved,
+            "chat/movableChanged" => Self::ChatMovableChanged,
             "chat/changesetsChanged" => Self::ChatChangesetsChanged,
             "chat/workingDirectorySet" => Self::ChatWorkingDirectorySet,
             "chat/workingDirectoryRemoved" => Self::ChatWorkingDirectoryRemoved,
@@ -540,6 +545,20 @@ pub struct SessionChatUpdatedAction {
     /// Identity fields (`resource`) never change and MUST be omitted by
     /// senders; receivers SHOULD ignore them if present.
     pub changes: PartialChatSummary,
+}
+
+/// The owning session's authoritative chat catalog order changed.
+///
+/// Host-emitted convergence signal; it never originates from a client
+/// dispatch. `chats` is the complete resulting order and MUST contain every
+/// chat currently in the session exactly once. Reducers replace the catalog
+/// order while preserving each matching summary. Invalid or incomplete orders
+/// are ignored.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionChatsReorderedAction {
+    /// Every chat URI in authoritative catalog order.
+    pub chats: Vec<Uri>,
 }
 
 /// The default chat input-routing hint for this session changed.
@@ -1082,6 +1101,20 @@ pub struct ChatBackgroundWorkSetAction {
 pub struct ChatBackgroundWorkRemovedAction {
     /// The {@link BackgroundWorkBase.id | id} of the entry to remove.
     pub id: String,
+}
+
+/// Whether this chat is structurally eligible to be the source of `moveChat`
+/// changed.
+///
+/// The host is authoritative and MUST also update the owning session's chat
+/// catalog with `session/chatUpdated` so `ChatSummary.movable` stays in sync.
+/// A chat referenced by its owning session's `defaultChat` MUST always carry
+/// `movable: false`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatMovableChangedAction {
+    /// Whether this chat is structurally eligible to be moved.
+    pub movable: bool,
 }
 
 /// The {@link Changeset | catalogue of changesets} the agent host advertises
@@ -2271,6 +2304,12 @@ pub struct PartialChatSummary {
     /// How this chat came into existence
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub origin: Option<ChatOrigin>,
+    /// Whether this chat is structurally eligible to be the source of
+    /// `moveChat`. Absence means `false`.
+    ///
+    /// See {@link ChatState.movable} for the full semantics.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub movable: Option<bool>,
     /// How the user can interact with this chat. See {@link ChatInteractivity}.
     ///
     /// Supports agent-team patterns where worker chats are read-only or hidden.
@@ -2306,6 +2345,8 @@ pub enum StateAction {
     SessionChatRemoved(SessionChatRemovedAction),
     #[serde(rename = "session/chatUpdated")]
     SessionChatUpdated(SessionChatUpdatedAction),
+    #[serde(rename = "session/chatsReordered")]
+    SessionChatsReordered(SessionChatsReorderedAction),
     #[serde(rename = "session/defaultChatChanged")]
     SessionDefaultChatChanged(SessionDefaultChatChangedAction),
     #[serde(rename = "chat/turnStarted")]
@@ -2346,6 +2387,8 @@ pub enum StateAction {
     ChatBackgroundWorkSet(ChatBackgroundWorkSetAction),
     #[serde(rename = "chat/backgroundWorkRemoved")]
     ChatBackgroundWorkRemoved(ChatBackgroundWorkRemovedAction),
+    #[serde(rename = "chat/movableChanged")]
+    ChatMovableChanged(ChatMovableChangedAction),
     #[serde(rename = "chat/changesetsChanged")]
     ChatChangesetsChanged(ChatChangesetsChangedAction),
     #[serde(rename = "session/titleChanged")]

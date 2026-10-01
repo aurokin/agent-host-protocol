@@ -1614,6 +1614,10 @@ public fun chatReducer(state: ChatState, action: StateAction): ChatState = when 
 
     is StateActionChatDraftChanged -> state.copy(draft = action.value.draft)
 
+    is StateActionChatIsReadChanged -> state.copy(
+        status = withStatusFlag(state.status, SessionStatus.IS_READ, action.value.isRead),
+    )
+
     is StateActionChatIsArchivedChanged -> state.copy(
         status = withStatusFlag(state.status, SessionStatus.IS_ARCHIVED, action.value.isArchived),
     )

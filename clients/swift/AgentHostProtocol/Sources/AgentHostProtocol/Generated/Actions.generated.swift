@@ -53,6 +53,7 @@ public enum ActionType: Codable, Sendable, Equatable {
     case chatPendingMessageRemoved
     case chatQueuedMessagesReordered
     case chatDraftChanged
+    case chatIsReadChanged
     case chatIsArchivedChanged
     case chatInputRequested
     case chatInputAnswerChanged
@@ -163,6 +164,7 @@ public enum ActionType: Codable, Sendable, Equatable {
         case "chat/pendingMessageRemoved": self = .chatPendingMessageRemoved
         case "chat/queuedMessagesReordered": self = .chatQueuedMessagesReordered
         case "chat/draftChanged": self = .chatDraftChanged
+        case "chat/isReadChanged": self = .chatIsReadChanged
         case "chat/isArchivedChanged": self = .chatIsArchivedChanged
         case "chat/inputRequested": self = .chatInputRequested
         case "chat/inputAnswerChanged": self = .chatInputAnswerChanged
@@ -273,6 +275,7 @@ public enum ActionType: Codable, Sendable, Equatable {
         case .chatPendingMessageRemoved: try container.encode("chat/pendingMessageRemoved")
         case .chatQueuedMessagesReordered: try container.encode("chat/queuedMessagesReordered")
         case .chatDraftChanged: try container.encode("chat/draftChanged")
+        case .chatIsReadChanged: try container.encode("chat/isReadChanged")
         case .chatIsArchivedChanged: try container.encode("chat/isArchivedChanged")
         case .chatInputRequested: try container.encode("chat/inputRequested")
         case .chatInputAnswerChanged: try container.encode("chat/inputAnswerChanged")
@@ -1624,6 +1627,20 @@ public struct ChatDraftChangedAction: Codable, Sendable {
     }
 }
 
+public struct ChatIsReadChangedAction: Codable, Sendable {
+    public var type: ActionType
+    /// Whether the chat has been read
+    public var isRead: Bool
+
+    public init(
+        type: ActionType,
+        isRead: Bool
+    ) {
+        self.type = type
+        self.isRead = isRead
+    }
+}
+
 public struct ChatIsArchivedChangedAction: Codable, Sendable {
     public var type: ActionType
     /// Whether the chat is archived
@@ -2577,6 +2594,7 @@ public enum StateAction: Codable, Sendable {
     case chatPendingMessageRemoved(ChatPendingMessageRemovedAction)
     case chatQueuedMessagesReordered(ChatQueuedMessagesReorderedAction)
     case chatDraftChanged(ChatDraftChangedAction)
+    case chatIsReadChanged(ChatIsReadChangedAction)
     case chatIsArchivedChanged(ChatIsArchivedChangedAction)
     case chatInputRequested(ChatInputRequestedAction)
     case chatInputAnswerChanged(ChatInputAnswerChangedAction)
@@ -2743,6 +2761,8 @@ public enum StateAction: Codable, Sendable {
             self = .chatQueuedMessagesReordered(try ChatQueuedMessagesReorderedAction(from: decoder))
         case "chat/draftChanged":
             self = .chatDraftChanged(try ChatDraftChangedAction(from: decoder))
+        case "chat/isReadChanged":
+            self = .chatIsReadChanged(try ChatIsReadChangedAction(from: decoder))
         case "chat/isArchivedChanged":
             self = .chatIsArchivedChanged(try ChatIsArchivedChangedAction(from: decoder))
         case "chat/inputRequested":
@@ -2905,6 +2925,7 @@ public enum StateAction: Codable, Sendable {
         case .chatPendingMessageRemoved(let v): try v.encode(to: encoder)
         case .chatQueuedMessagesReordered(let v): try v.encode(to: encoder)
         case .chatDraftChanged(let v): try v.encode(to: encoder)
+        case .chatIsReadChanged(let v): try v.encode(to: encoder)
         case .chatIsArchivedChanged(let v): try v.encode(to: encoder)
         case .chatInputRequested(let v): try v.encode(to: encoder)
         case .chatInputAnswerChanged(let v): try v.encode(to: encoder)

@@ -119,6 +119,8 @@ public readonly struct ActionType : IEquatable<ActionType>
 
     public static readonly ActionType ChatDraftChanged = new ActionType("chat/draftChanged");
 
+    public static readonly ActionType ChatIsReadChanged = new ActionType("chat/isReadChanged");
+
     public static readonly ActionType ChatIsArchivedChanged = new ActionType("chat/isArchivedChanged");
 
     public static readonly ActionType ChatInputRequested = new ActionType("chat/inputRequested");
@@ -2015,6 +2017,21 @@ public sealed record ChatDraftChangedAction
     public Message? Draft { get; init; }
 }
 
+/// <summary>The read state of the chat changed.
+///
+/// Dispatched by a client to mark a non-default chat as read (e.g. after
+/// viewing it) or unread. This changes only the addressed chat; it does not
+/// change the read state of its owning session or sibling chats. The default
+/// chat's read state is represented by its session and SHOULD use
+/// `session/isReadChanged` instead.</summary>
+public sealed record ChatIsReadChangedAction
+{
+    public ActionType Type { get; init; } = ActionType.ChatIsReadChanged;
+
+    /// <summary>Whether the chat has been read</summary>
+    public bool IsRead { get; init; }
+}
+
 /// <summary>The archived state of the chat changed.
 ///
 /// Dispatched by a client to archive a chat independently of its owning
@@ -2811,6 +2828,7 @@ internal sealed class StateActionConverter : UnionConverter<StateAction>
         ["chat/pendingMessageRemoved"] = typeof(ChatPendingMessageRemovedAction),
         ["chat/queuedMessagesReordered"] = typeof(ChatQueuedMessagesReorderedAction),
         ["chat/draftChanged"] = typeof(ChatDraftChangedAction),
+        ["chat/isReadChanged"] = typeof(ChatIsReadChangedAction),
         ["chat/isArchivedChanged"] = typeof(ChatIsArchivedChangedAction),
         ["chat/inputRequested"] = typeof(ChatInputRequestedAction),
         ["chat/inputAnswerChanged"] = typeof(ChatInputAnswerChangedAction),

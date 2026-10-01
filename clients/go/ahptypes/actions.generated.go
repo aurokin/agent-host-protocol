@@ -66,6 +66,7 @@ const (
 	ActionTypeChatPendingMessageRemoved           ActionType = "chat/pendingMessageRemoved"
 	ActionTypeChatQueuedMessagesReordered         ActionType = "chat/queuedMessagesReordered"
 	ActionTypeChatDraftChanged                    ActionType = "chat/draftChanged"
+	ActionTypeChatIsReadChanged                   ActionType = "chat/isReadChanged"
 	ActionTypeChatIsArchivedChanged               ActionType = "chat/isArchivedChanged"
 	ActionTypeChatInputRequested                  ActionType = "chat/inputRequested"
 	ActionTypeChatInputAnswerChanged              ActionType = "chat/inputAnswerChanged"
@@ -811,6 +812,19 @@ type ChatDraftChangedAction struct {
 	Type ActionType `json:"type"`
 	// New draft message, or `undefined` to clear it
 	Draft *Message `json:"draft,omitempty"`
+}
+
+// The read state of the chat changed.
+//
+// Dispatched by a client to mark a non-default chat as read (e.g. after
+// viewing it) or unread. This changes only the addressed chat; it does not
+// change the read state of its owning session or sibling chats. The default
+// chat's read state is represented by its session and SHOULD use
+// `session/isReadChanged` instead.
+type ChatIsReadChangedAction struct {
+	Type ActionType `json:"type"`
+	// Whether the chat has been read
+	IsRead bool `json:"isRead"`
 }
 
 // The archived state of the chat changed.
@@ -1801,6 +1815,7 @@ func (*ChatPendingMessageSetAction) isStateAction()               {}
 func (*ChatPendingMessageRemovedAction) isStateAction()           {}
 func (*ChatQueuedMessagesReorderedAction) isStateAction()         {}
 func (*ChatDraftChangedAction) isStateAction()                    {}
+func (*ChatIsReadChangedAction) isStateAction()                   {}
 func (*ChatIsArchivedChangedAction) isStateAction()               {}
 func (*ChatInputRequestedAction) isStateAction()                  {}
 func (*ChatInputAnswerChangedAction) isStateAction()              {}
@@ -2105,6 +2120,12 @@ func (u *StateAction) UnmarshalJSON(data []byte) error {
 		u.Value = &value
 	case "chat/draftChanged":
 		var value ChatDraftChangedAction
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Value = &value
+	case "chat/isReadChanged":
+		var value ChatIsReadChangedAction
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}

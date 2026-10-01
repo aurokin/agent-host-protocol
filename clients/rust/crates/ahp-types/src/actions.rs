@@ -77,6 +77,7 @@ pub enum ActionType {
     ChatPendingMessageRemoved,
     ChatQueuedMessagesReordered,
     ChatDraftChanged,
+    ChatIsReadChanged,
     ChatIsArchivedChanged,
     ChatInputRequested,
     ChatInputAnswerChanged,
@@ -218,6 +219,7 @@ impl serde::Serialize for ActionType {
                 serializer.serialize_str("chat/queuedMessagesReordered")
             }
             Self::ChatDraftChanged => serializer.serialize_str("chat/draftChanged"),
+            Self::ChatIsReadChanged => serializer.serialize_str("chat/isReadChanged"),
             Self::ChatIsArchivedChanged => serializer.serialize_str("chat/isArchivedChanged"),
             Self::ChatInputRequested => serializer.serialize_str("chat/inputRequested"),
             Self::ChatInputAnswerChanged => serializer.serialize_str("chat/inputAnswerChanged"),
@@ -369,6 +371,7 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "chat/pendingMessageRemoved" => Self::ChatPendingMessageRemoved,
             "chat/queuedMessagesReordered" => Self::ChatQueuedMessagesReordered,
             "chat/draftChanged" => Self::ChatDraftChanged,
+            "chat/isReadChanged" => Self::ChatIsReadChanged,
             "chat/isArchivedChanged" => Self::ChatIsArchivedChanged,
             "chat/inputRequested" => Self::ChatInputRequested,
             "chat/inputAnswerChanged" => Self::ChatInputAnswerChanged,
@@ -1476,6 +1479,20 @@ pub struct ChatDraftChangedAction {
     pub draft: Option<Message>,
 }
 
+/// The read state of the chat changed.
+///
+/// Dispatched by a client to mark a non-default chat as read (e.g. after
+/// viewing it) or unread. This changes only the addressed chat; it does not
+/// change the read state of its owning session or sibling chats. The default
+/// chat's read state is represented by its session and SHOULD use
+/// `session/isReadChanged` instead.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatIsReadChangedAction {
+    /// Whether the chat has been read
+    pub is_read: bool,
+}
+
 /// The archived state of the chat changed.
 ///
 /// Dispatched by a client to archive a chat independently of its owning
@@ -2431,6 +2448,8 @@ pub enum StateAction {
     ChatQueuedMessagesReordered(ChatQueuedMessagesReorderedAction),
     #[serde(rename = "chat/draftChanged")]
     ChatDraftChanged(ChatDraftChangedAction),
+    #[serde(rename = "chat/isReadChanged")]
+    ChatIsReadChanged(ChatIsReadChangedAction),
     #[serde(rename = "chat/isArchivedChanged")]
     ChatIsArchivedChanged(ChatIsArchivedChangedAction),
     #[serde(rename = "chat/inputRequested")]

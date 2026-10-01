@@ -8618,6 +8618,9 @@
           "$ref": "#/$defs/ChatDraftChangedAction"
         },
         {
+          "$ref": "#/$defs/ChatIsReadChangedAction"
+        },
+        {
           "$ref": "#/$defs/ChatIsArchivedChangedAction"
         },
         {
@@ -10318,6 +10321,23 @@
       },
       "required": [
         "type"
+      ]
+    },
+    "ChatIsReadChangedAction": {
+      "type": "object",
+      "description": "The read state of the chat changed.\n\nDispatched by a client to mark a non-default chat as read (e.g. after\nviewing it) or unread. This changes only the addressed chat; it does not\nchange the read state of its owning session or sibling chats. The default\nchat's read state is represented by its session and SHOULD use\n`session/isReadChanged` instead.",
+      "properties": {
+        "type": {
+          "const": "chat/isReadChanged"
+        },
+        "isRead": {
+          "type": "boolean",
+          "description": "Whether the chat has been read"
+        }
+      },
+      "required": [
+        "type",
+        "isRead"
       ]
     },
     "ChatIsArchivedChangedAction": {

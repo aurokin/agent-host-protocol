@@ -78,6 +78,7 @@ import type {
   ChatPendingMessageRemovedAction,
   ChatQueuedMessagesReorderedAction,
   ChatDraftChangedAction,
+  ChatIsReadChangedAction,
   ChatIsArchivedChangedAction,
   ChatInputRequestedAction,
   ChatInputAnswerChangedAction,
@@ -192,6 +193,7 @@ export const enum ActionType {
   ChatPendingMessageRemoved = 'chat/pendingMessageRemoved',
   ChatQueuedMessagesReordered = 'chat/queuedMessagesReordered',
   ChatDraftChanged = 'chat/draftChanged',
+  ChatIsReadChanged = 'chat/isReadChanged',
   ChatIsArchivedChanged = 'chat/isArchivedChanged',
   ChatInputRequested = 'chat/inputRequested',
   ChatInputAnswerChanged = 'chat/inputAnswerChanged',
@@ -347,6 +349,7 @@ export type StateAction =
   | ChatPendingMessageRemovedAction
   | ChatQueuedMessagesReorderedAction
   | ChatDraftChangedAction
+  | ChatIsReadChangedAction
   | ChatIsArchivedChangedAction
   | ChatInputRequestedAction
   | ChatInputAnswerChangedAction

@@ -362,7 +362,7 @@ function extractProps(iface: InterfaceDeclaration, project: Project): GoProp[] {
       && (tsName === 'triggers' || tsName === '_meta'))
       || ((iface.getName() === 'AutomationDefinition' || iface.getName() === 'AutomationDefinitionPatch')
         && tsName === 'disableConditions')
-      || (tsName === 'backgroundWork' && (iface.getName() === 'ChatState' || iface.getName() === 'ChatSummary'));
+      || (tsName === 'backgroundWork' && iface.getName() === 'ChatState');
     if (optional && !alreadyPointer && (presenceSensitiveCollection || (!goType.startsWith('[]') && !goType.startsWith('map[')))) {
       goType = `*${goType}`;
     }

@@ -1613,10 +1613,6 @@ data class PartialChatSummary(
      */
     val activity: String? = null,
     /**
-     * Background work, mirrored from {@link ChatState.backgroundWork}.
-     */
-    val backgroundWork: List<BackgroundWork>? = null,
-    /**
      * Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
      */
     val modifiedAt: String? = null,

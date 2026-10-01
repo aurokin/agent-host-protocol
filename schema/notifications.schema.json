@@ -2686,13 +2686,6 @@
           "type": "string",
           "description": "Human-readable description of what the chat is currently doing"
         },
-        "backgroundWork": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/BackgroundWork"
-          },
-          "description": "Work running in the background for this chat, such as shells and\nsubagents. Only active work is listed: hosts remove an entry once the work\nends. An entry may have been started by an earlier turn rather than the\n{@link ChatState.activeTurn | activeTurn}."
-        },
         "modifiedAt": {
           "type": "string",
           "description": "Last modification timestamp (ISO 8601, e.g. `\"2025-03-10T18:42:03.123Z\"`)"
@@ -2726,6 +2719,13 @@
             "$ref": "#/$defs/Changeset"
           },
           "description": "Catalogue of changesets the server can produce for this chat. Each entry\nadvertises a subscribable view of file changes scoped to the chat's\neffective working directories and the URI template the client expands\nbefore subscribing. See {@link Changeset} for the full shape and\n{@link /guide/changesets | Changesets} for an overview of the model.\n\nThis catalogue is intentionally absent from {@link ChatSummary}; clients\nobtain it by subscribing to the chat channel."
+        },
+        "backgroundWork": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BackgroundWork"
+          },
+          "description": "Work running in the background for this chat, such as shells and\nsubagents. Only active work is listed: hosts remove an entry once the work\nends. An entry may have been started by an earlier turn rather than the\n{@link ChatState.activeTurn | activeTurn}.\n\nLike {@link ChatState.changesets | changesets}, this is intentionally\nabsent from {@link ChatSummary}; clients obtain it by subscribing to the\nchat channel."
         },
         "turns": {
           "type": "array",
@@ -2790,13 +2790,6 @@
         "activity": {
           "type": "string",
           "description": "Human-readable description of what the chat is currently doing"
-        },
-        "backgroundWork": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/BackgroundWork"
-          },
-          "description": "Background work, mirrored from {@link ChatState.backgroundWork}."
         },
         "modifiedAt": {
           "type": "string",

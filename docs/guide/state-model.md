@@ -145,9 +145,9 @@ Subscribable on a [Chat Channel](/specification/chat-channel) at `ahp-chat:/<cid
 and subagents.
 Hosts publish complete entries with `chat/backgroundWorkSet` and remove them with
 `chat/backgroundWorkRemoved` when they finish or are no longer tracked. Entry IDs are
-opaque, unique within a chat across all kinds, and scoped to that chat. Hosts mirror
-the list into `SessionState.chats` through `session/chatUpdated`, so a session
-subscriber can discover its chats' background work without reading transcripts.
+opaque, unique within a chat across all kinds, and scoped to that chat. Like
+`changesets`, the list is not mirrored into `SessionState.chats`; clients read it by
+subscribing to the chat.
 
 Each entry has a `kind`, a `label`, and a start time. Every entry is unfinished work;
 hosts remove entries when the work finishes rather than marking them done. A shell

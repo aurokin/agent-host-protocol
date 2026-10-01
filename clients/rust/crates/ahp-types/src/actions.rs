@@ -1086,7 +1086,7 @@ pub struct ChatActivityChangedAction {
 }
 
 /// Adds or replaces a {@link BackgroundWork} entry by `id`, independently of turn
-/// state. Hosts mirror the resulting list through `session/chatUpdated`.
+/// state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatBackgroundWorkSetAction {
@@ -1095,7 +1095,6 @@ pub struct ChatBackgroundWorkSetAction {
 }
 
 /// Removes finished or no-longer-tracked background work; unknown IDs are a no-op.
-/// Hosts mirror the resulting list through `session/chatUpdated`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatBackgroundWorkRemovedAction {
@@ -2290,9 +2289,6 @@ pub struct PartialChatSummary {
     /// Human-readable description of what the chat is currently doing
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
-    /// Background work, mirrored from {@link ChatState.backgroundWork}.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub modified_at: Option<String>,

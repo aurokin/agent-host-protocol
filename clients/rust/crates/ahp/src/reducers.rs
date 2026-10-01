@@ -746,9 +746,6 @@ pub fn apply_action_to_session(state: &mut SessionState, action: &StateAction) -
             if let Some(activity) = &a.changes.activity {
                 chat.activity = Some(activity.clone());
             }
-            if let Some(work) = &a.changes.background_work {
-                chat.background_work = Some(work.clone());
-            }
             if let Some(modified_at) = &a.changes.modified_at {
                 chat.modified_at = modified_at.clone();
             }

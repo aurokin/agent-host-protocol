@@ -1641,13 +1641,6 @@ data class ChatState(
      */
     val activity: String? = null,
     /**
-     * Work running in the background for this chat, such as shells and
-     * subagents. Only active work is listed: hosts remove an entry once the work
-     * ends. An entry may have been started by an earlier turn rather than the
-     * {@link ChatState.activeTurn | activeTurn}.
-     */
-    val backgroundWork: List<BackgroundWork>? = null,
-    /**
      * Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
      */
     val modifiedAt: String,
@@ -1703,6 +1696,17 @@ data class ChatState(
      * obtain it by subscribing to the chat channel.
      */
     val changesets: List<Changeset>? = null,
+    /**
+     * Work running in the background for this chat, such as shells and
+     * subagents. Only active work is listed: hosts remove an entry once the work
+     * ends. An entry may have been started by an earlier turn rather than the
+     * {@link ChatState.activeTurn | activeTurn}.
+     *
+     * Like {@link ChatState.changesets | changesets}, this is intentionally
+     * absent from {@link ChatSummary}; clients obtain it by subscribing to the
+     * chat channel.
+     */
+    val backgroundWork: List<BackgroundWork>? = null,
     /**
      * Completed turns
      */
@@ -1767,10 +1771,6 @@ data class ChatSummary(
      * Human-readable description of what the chat is currently doing
      */
     val activity: String? = null,
-    /**
-     * Background work, mirrored from {@link ChatState.backgroundWork}.
-     */
-    val backgroundWork: List<BackgroundWork>? = null,
     /**
      * Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
      */

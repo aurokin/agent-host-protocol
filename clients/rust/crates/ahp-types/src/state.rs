@@ -1928,12 +1928,6 @@ pub struct ChatState {
     /// Human-readable description of what the chat is currently doing
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
-    /// Work running in the background for this chat, such as shells and
-    /// subagents. Only active work is listed: hosts remove an entry once the work
-    /// ends. An entry may have been started by an earlier turn rather than the
-    /// {@link ChatState.activeTurn | activeTurn}.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     pub modified_at: String,
     /// Aggregate summary of file changes associated with this chat. Servers may
@@ -1982,6 +1976,16 @@ pub struct ChatState {
     /// obtain it by subscribing to the chat channel.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub changesets: Option<Vec<Changeset>>,
+    /// Work running in the background for this chat, such as shells and
+    /// subagents. Only active work is listed: hosts remove an entry once the work
+    /// ends. An entry may have been started by an earlier turn rather than the
+    /// {@link ChatState.activeTurn | activeTurn}.
+    ///
+    /// Like {@link ChatState.changesets | changesets}, this is intentionally
+    /// absent from {@link ChatSummary}; clients obtain it by subscribing to the
+    /// chat channel.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background_work: Option<Vec<BackgroundWork>>,
     /// Completed turns
     pub turns: Vec<Turn>,
     /// Cursor for loading older completed turns into this chat state.
@@ -2034,9 +2038,6 @@ pub struct ChatSummary {
     /// Human-readable description of what the chat is currently doing
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<String>,
-    /// Background work, mirrored from {@link ChatState.backgroundWork}.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub background_work: Option<Vec<BackgroundWork>>,
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     pub modified_at: String,
     /// Aggregate summary of file changes associated with this chat. Servers may

@@ -1664,11 +1664,6 @@ public struct ChatState: Codable, Sendable {
     public var status: SessionStatus
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
-    /// Work running in the background for this chat, such as shells and
-    /// subagents. Only active work is listed: hosts remove an entry once the work
-    /// ends. An entry may have been started by an earlier turn rather than the
-    /// {@link ChatState.activeTurn | activeTurn}.
-    public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
     /// Aggregate summary of file changes associated with this chat. Servers may
@@ -1711,6 +1706,15 @@ public struct ChatState: Codable, Sendable {
     /// This catalogue is intentionally absent from {@link ChatSummary}; clients
     /// obtain it by subscribing to the chat channel.
     public var changesets: [Changeset]?
+    /// Work running in the background for this chat, such as shells and
+    /// subagents. Only active work is listed: hosts remove an entry once the work
+    /// ends. An entry may have been started by an earlier turn rather than the
+    /// {@link ChatState.activeTurn | activeTurn}.
+    ///
+    /// Like {@link ChatState.changesets | changesets}, this is intentionally
+    /// absent from {@link ChatSummary}; clients obtain it by subscribing to the
+    /// chat channel.
+    public var backgroundWork: [BackgroundWork]?
     /// Completed turns
     public var turns: [Turn]
     /// Cursor for loading older completed turns into this chat state.
@@ -1746,7 +1750,6 @@ public struct ChatState: Codable, Sendable {
         case title
         case status
         case activity
-        case backgroundWork
         case modifiedAt
         case changes
         case origin
@@ -1754,6 +1757,7 @@ public struct ChatState: Codable, Sendable {
         case interactivity
         case workingDirectories
         case changesets
+        case backgroundWork
         case turns
         case turnsNextCursor
         case activeTurn
@@ -1768,7 +1772,6 @@ public struct ChatState: Codable, Sendable {
         title: String,
         status: SessionStatus,
         activity: String? = nil,
-        backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String,
         changes: ChangesSummary? = nil,
         origin: ChatOrigin? = nil,
@@ -1776,6 +1779,7 @@ public struct ChatState: Codable, Sendable {
         interactivity: ChatInteractivity? = nil,
         workingDirectories: [String]? = nil,
         changesets: [Changeset]? = nil,
+        backgroundWork: [BackgroundWork]? = nil,
         turns: [Turn],
         turnsNextCursor: String? = nil,
         activeTurn: ActiveTurn? = nil,
@@ -1788,7 +1792,6 @@ public struct ChatState: Codable, Sendable {
         self.title = title
         self.status = status
         self.activity = activity
-        self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
         self.changes = changes
         self.origin = origin
@@ -1796,6 +1799,7 @@ public struct ChatState: Codable, Sendable {
         self.interactivity = interactivity
         self.workingDirectories = workingDirectories
         self.changesets = changesets
+        self.backgroundWork = backgroundWork
         self.turns = turns
         self.turnsNextCursor = turnsNextCursor
         self.activeTurn = activeTurn
@@ -1815,8 +1819,6 @@ public struct ChatSummary: Codable, Sendable {
     public var status: SessionStatus
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
-    /// Background work, mirrored from {@link ChatState.backgroundWork}.
-    public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String
     /// Aggregate summary of file changes associated with this chat. Servers may
@@ -1845,7 +1847,6 @@ public struct ChatSummary: Codable, Sendable {
         title: String,
         status: SessionStatus,
         activity: String? = nil,
-        backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String,
         changes: ChangesSummary? = nil,
         origin: ChatOrigin? = nil,
@@ -1857,7 +1858,6 @@ public struct ChatSummary: Codable, Sendable {
         self.title = title
         self.status = status
         self.activity = activity
-        self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
         self.changes = changes
         self.origin = origin

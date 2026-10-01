@@ -1268,11 +1268,6 @@ type ChatState struct {
 	Status SessionStatus `json:"status"`
 	// Human-readable description of what the chat is currently doing
 	Activity *string `json:"activity,omitempty"`
-	// Work running in the background for this chat, such as shells and
-	// subagents. Only active work is listed: hosts remove an entry once the work
-	// ends. An entry may have been started by an earlier turn rather than the
-	// {@link ChatState.activeTurn | activeTurn}.
-	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
 	ModifiedAt string `json:"modifiedAt"`
 	// Aggregate summary of file changes associated with this chat. Servers may
@@ -1315,6 +1310,15 @@ type ChatState struct {
 	// This catalogue is intentionally absent from {@link ChatSummary}; clients
 	// obtain it by subscribing to the chat channel.
 	Changesets []Changeset `json:"changesets,omitempty"`
+	// Work running in the background for this chat, such as shells and
+	// subagents. Only active work is listed: hosts remove an entry once the work
+	// ends. An entry may have been started by an earlier turn rather than the
+	// {@link ChatState.activeTurn | activeTurn}.
+	//
+	// Like {@link ChatState.changesets | changesets}, this is intentionally
+	// absent from {@link ChatSummary}; clients obtain it by subscribing to the
+	// chat channel.
+	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Completed turns
 	Turns []Turn `json:"turns"`
 	// Cursor for loading older completed turns into this chat state.
@@ -1358,8 +1362,6 @@ type ChatSummary struct {
 	Status SessionStatus `json:"status"`
 	// Human-readable description of what the chat is currently doing
 	Activity *string `json:"activity,omitempty"`
-	// Background work, mirrored from {@link ChatState.backgroundWork}.
-	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
 	ModifiedAt string `json:"modifiedAt"`
 	// Aggregate summary of file changes associated with this chat. Servers may

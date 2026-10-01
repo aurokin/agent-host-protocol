@@ -1729,7 +1729,7 @@ public sealed record ChatActivityChangedAction
 }
 
 /// <summary>Adds or replaces a {@link BackgroundWork} entry by `id`, independently of turn
-/// state. Hosts mirror the resulting list through `session/chatUpdated`.</summary>
+/// state.</summary>
 public sealed record ChatBackgroundWorkSetAction
 {
     public ActionType Type { get; init; }
@@ -1738,8 +1738,7 @@ public sealed record ChatBackgroundWorkSetAction
     public required BackgroundWork Work { get; init; }
 }
 
-/// <summary>Removes finished or no-longer-tracked background work; unknown IDs are a no-op.
-/// Hosts mirror the resulting list through `session/chatUpdated`.</summary>
+/// <summary>Removes finished or no-longer-tracked background work; unknown IDs are a no-op.</summary>
 public sealed record ChatBackgroundWorkRemovedAction
 {
     public ActionType Type { get; init; }
@@ -2629,10 +2628,6 @@ public sealed record PartialChatSummary
     /// <summary>Human-readable description of what the chat is currently doing</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Activity { get; init; }
-
-    /// <summary>Background work, mirrored from {@link ChatState.backgroundWork}.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<BackgroundWork>? BackgroundWork { get; init; }
 
     /// <summary>Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

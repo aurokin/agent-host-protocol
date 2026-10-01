@@ -662,7 +662,7 @@ type ChatActivityChangedAction struct {
 }
 
 // Adds or replaces a {@link BackgroundWork} entry by `id`, independently of turn
-// state. Hosts mirror the resulting list through `session/chatUpdated`.
+// state.
 type ChatBackgroundWorkSetAction struct {
 	Type ActionType `json:"type"`
 	// The complete entry.
@@ -670,7 +670,6 @@ type ChatBackgroundWorkSetAction struct {
 }
 
 // Removes finished or no-longer-tracked background work; unknown IDs are a no-op.
-// Hosts mirror the resulting list through `session/chatUpdated`.
 type ChatBackgroundWorkRemovedAction struct {
 	Type ActionType `json:"type"`
 	// The {@link BackgroundWorkBase.id | id} of the entry to remove.

@@ -2474,8 +2474,6 @@ public struct PartialChatSummary: Codable, Sendable {
     public var status: SessionStatus?
     /// Human-readable description of what the chat is currently doing
     public var activity: String?
-    /// Background work, mirrored from {@link ChatState.backgroundWork}.
-    public var backgroundWork: [BackgroundWork]?
     /// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
     public var modifiedAt: String?
     /// Aggregate summary of file changes associated with this chat. Servers may
@@ -2504,7 +2502,6 @@ public struct PartialChatSummary: Codable, Sendable {
         title: String? = nil,
         status: SessionStatus? = nil,
         activity: String? = nil,
-        backgroundWork: [BackgroundWork]? = nil,
         modifiedAt: String? = nil,
         changes: ChangesSummary? = nil,
         origin: ChatOrigin? = nil,
@@ -2516,7 +2513,6 @@ public struct PartialChatSummary: Codable, Sendable {
         self.title = title
         self.status = status
         self.activity = activity
-        self.backgroundWork = backgroundWork
         self.modifiedAt = modifiedAt
         self.changes = changes
         self.origin = origin

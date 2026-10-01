@@ -1025,7 +1025,7 @@ public func isClientDispatchable(_ action: StateAction) -> Bool {
          .sessionActiveClientRemoved,
          .chatPendingMessageSet,
          .chatPendingMessageRemoved, .chatQueuedMessagesReordered,
-         .chatIsArchivedChanged,
+         .chatIsReadChanged, .chatIsArchivedChanged,
          .chatInputAnswerChanged, .chatInputCompleted,
          .sessionCustomizationToggled,
          .sessionMcpServerStartRequested, .sessionMcpServerStopRequested,

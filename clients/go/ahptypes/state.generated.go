@@ -1219,6 +1219,12 @@ type SessionChatSummary struct {
 	// lists without subscribing to the session channel. Absence means the
 	// chat is not archived.
 	Archived *bool `json:"archived,omitempty"`
+	// Aggregate summary of file changes associated with this chat.
+	//
+	// Servers may populate this so session lists can show per-chat change
+	// counts without subscribing to the session or chat channel. Updates travel
+	// with the rest of the catalog in `root/sessionSummaryChanged`.
+	Changes *ChangesSummary `json:"changes,omitempty"`
 }
 
 // Aggregate counts describing the file changes associated with a session or

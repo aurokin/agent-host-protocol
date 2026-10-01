@@ -2011,6 +2011,14 @@ public sealed record SessionChatSummary
     /// chat is not archived.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public bool? Archived { get; init; }
+
+    /// <summary>Aggregate summary of file changes associated with this chat.
+    ///
+    /// Servers may populate this so session lists can show per-chat change
+    /// counts without subscribing to the session or chat channel. Updates travel
+    /// with the rest of the catalog in `root/sessionSummaryChanged`.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ChangesSummary? Changes { get; init; }
 }
 
 /// <summary>Aggregate counts describing the file changes associated with a session or

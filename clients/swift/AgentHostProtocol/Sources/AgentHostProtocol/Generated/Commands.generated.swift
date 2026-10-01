@@ -1755,6 +1755,10 @@ public struct SessionConfigPropertySchema: Codable, Sendable {
     public var readOnly: Bool?
     /// JSON Schema: schema for array items (used when `type` is `'array'`)
     public var items: ConfigPropertySchema?
+    /// JSON Schema: minimum number of array items (used when `type` is `'array'`)
+    public var minItems: Int?
+    /// JSON Schema: maximum number of array items (used when `type` is `'array'`)
+    public var maxItems: Int?
     /// JSON Schema: property descriptors for object properties (used when `type` is `'object'`)
     public var properties: [String: ConfigPropertySchema]?
     /// JSON Schema: list of required property ids (used when `type` is `'object'`)
@@ -1779,6 +1783,8 @@ public struct SessionConfigPropertySchema: Codable, Sendable {
         case enumDescriptions
         case readOnly
         case items
+        case minItems
+        case maxItems
         case properties
         case required
         case additionalProperties
@@ -1796,6 +1802,8 @@ public struct SessionConfigPropertySchema: Codable, Sendable {
         enumDescriptions: [String]? = nil,
         readOnly: Bool? = nil,
         items: ConfigPropertySchema? = nil,
+        minItems: Int? = nil,
+        maxItems: Int? = nil,
         properties: [String: ConfigPropertySchema]? = nil,
         required: [String]? = nil,
         additionalProperties: ConfigPropertySchema? = nil,
@@ -1811,6 +1819,8 @@ public struct SessionConfigPropertySchema: Codable, Sendable {
         self.enumDescriptions = enumDescriptions
         self.readOnly = readOnly
         self.items = items
+        self.minItems = minItems
+        self.maxItems = maxItems
         self.properties = properties
         self.required = required
         self.additionalProperties = additionalProperties

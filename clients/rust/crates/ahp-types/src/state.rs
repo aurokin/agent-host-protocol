@@ -1864,6 +1864,12 @@ pub struct ConfigPropertySchema {
     /// JSON Schema: schema for array items (used when `type` is `'array'`)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub items: Option<Box<ConfigPropertySchema>>,
+    /// JSON Schema: minimum number of array items (used when `type` is `'array'`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_items: Option<i64>,
+    /// JSON Schema: maximum number of array items (used when `type` is `'array'`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_items: Option<i64>,
     /// JSON Schema: property descriptors for object properties (used when `type` is `'object'`)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub properties: Option<std::collections::HashMap<String, Box<ConfigPropertySchema>>>,
@@ -2643,6 +2649,12 @@ pub struct SessionConfigPropertySchema {
     /// JSON Schema: schema for array items (used when `type` is `'array'`)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub items: Option<ConfigPropertySchema>,
+    /// JSON Schema: minimum number of array items (used when `type` is `'array'`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_items: Option<i64>,
+    /// JSON Schema: maximum number of array items (used when `type` is `'array'`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_items: Option<i64>,
     /// JSON Schema: property descriptors for object properties (used when `type` is `'object'`)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub properties: Option<std::collections::HashMap<String, ConfigPropertySchema>>,

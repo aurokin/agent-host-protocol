@@ -26,7 +26,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
-    Arc,
+    Arc, Weak,
 };
 use std::time::Duration;
 
@@ -53,10 +53,10 @@ use ahp_types::notifications::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
-use tokio::sync::{broadcast, mpsc, oneshot, Mutex};
+use tokio::sync::{broadcast, mpsc, oneshot, watch, Mutex};
 use tokio::task::JoinHandle;
 
-use crate::error::ClientError;
+use crate::error::{ClientError, TransportError};
 use crate::transport::{Transport, TransportMessage};
 
 /// Default size of a per-subscription broadcast channel. Consumers that
@@ -189,8 +189,30 @@ pub struct DispatchHandle {
 
 type PendingMap = HashMap<u64, oneshot::Sender<Result<Value, JsonRpcError>>>;
 
+pub(crate) struct RequestIds {
+    next: std::sync::Mutex<Option<u64>>,
+}
+
+impl RequestIds {
+    pub(crate) fn new() -> Self {
+        Self {
+            next: std::sync::Mutex::new(Some(1)),
+        }
+    }
+
+    fn allocate(&self) -> Result<u64, ClientError> {
+        let mut next = self.next.lock().expect("request IDs mutex poisoned");
+        let id =
+            next.ok_or_else(|| TransportError::Protocol("request ID space exhausted".into()))?;
+        *next = id.checked_add(1);
+        Ok(id)
+    }
+}
+
 struct Shared {
-    pending: Mutex<PendingMap>,
+    // A synchronous lock lets request-future Drop remove entries without an await.
+    pending: std::sync::Mutex<PendingMap>,
+    closed: watch::Sender<bool>,
     subscriptions: Mutex<HashMap<String, broadcast::Sender<SubscriptionEvent>>>,
     /// Top-level all-events broadcast.
     ///
@@ -201,7 +223,7 @@ struct Shared {
     /// alive inside the still-`Arc`-held `Shared`).
     all_events: std::sync::Mutex<Option<broadcast::Sender<ClientEvent>>>,
     outbound: mpsc::Sender<Outbound>,
-    next_id: AtomicU64,
+    request_ids: Arc<RequestIds>,
     next_client_seq: AtomicU64,
     config: ClientConfig,
     /// Handler for inbound server-initiated requests (the symmetrical
@@ -212,6 +234,138 @@ struct Shared {
 enum Outbound {
     Message(JsonRpcMessage),
     Shutdown,
+}
+
+impl Shared {
+    fn stop_requests(&self, message: Option<&str>) {
+        let mut pending = self.pending.lock().expect("pending mutex poisoned");
+        self.closed.send_replace(true);
+        for (_, tx) in pending.drain() {
+            if let Some(message) = message {
+                let _ = tx.send(Err(JsonRpcError {
+                    code: -32000,
+                    message: message.into(),
+                    data: None,
+                }));
+            }
+        }
+    }
+
+    async fn request<P, R>(&self, method: &str, params: P, weak: bool) -> Result<R, ClientError>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        let mut closed = self.closed.subscribe();
+        if *closed.borrow() {
+            return Err(ClientError::Shutdown);
+        }
+        let id = self.request_ids.allocate()?;
+        let params_val = serde_json::to_value(&params)?;
+        let params_any = if params_val.is_null() {
+            None
+        } else {
+            Some(ahp_types::common::AnyValue::from(params_val))
+        };
+        let req = JsonRpcMessage::Request(JsonRpcRequest {
+            jsonrpc: JsonRpcVersion::V2,
+            id,
+            method: method.into(),
+            params: params_any,
+        });
+
+        let (tx, rx) = oneshot::channel();
+        {
+            let mut pending = self.pending.lock().expect("pending mutex poisoned");
+            if *closed.borrow() {
+                return Err(ClientError::Shutdown);
+            }
+            pending.insert(id, tx);
+        }
+        let _pending = PendingRequest { shared: self, id };
+
+        let response = async {
+            self.outbound
+                .send(Outbound::Message(req))
+                .await
+                .map_err(|_| ClientError::Shutdown)?;
+
+            let result = match self.config.default_request_timeout {
+                Some(dur) => tokio::time::timeout(dur, rx)
+                    .await
+                    .map_err(|_| ClientError::Cancelled)?,
+                None => rx.await,
+            };
+            match result {
+                Ok(Ok(value)) => Ok(serde_json::from_value(value)?),
+                Ok(Err(e)) => Err(ClientError::Rpc(e)),
+                Err(_) => Err(ClientError::Shutdown),
+            }
+        };
+        tokio::select! {
+            biased;
+            _ = closed.wait_for(|closed| *closed), if weak => Err(ClientError::Shutdown),
+            result = response => result,
+        }
+    }
+
+    async fn ping(&self, weak: bool) -> Result<(), ClientError> {
+        #[derive(Serialize)]
+        struct PingParams {
+            channel: &'static str,
+        }
+        self.request(
+            "ping",
+            PingParams {
+                channel: ROOT_RESOURCE_URI,
+            },
+            weak,
+        )
+        .await
+    }
+}
+
+struct PendingRequest<'a> {
+    shared: &'a Shared,
+    id: u64,
+}
+
+impl Drop for PendingRequest<'_> {
+    fn drop(&mut self) {
+        self.shared
+            .pending
+            .lock()
+            .expect("pending mutex poisoned")
+            .remove(&self.id);
+    }
+}
+
+/// Non-owning handle for client-correlated keepalive requests.
+///
+/// Supplied to [`Transport::bind_client`] before transport I/O starts.
+/// Cloning the handle or awaiting [`Self::ping`] never keeps the client's
+/// background driver alive. Pings share the client's normal request IDs,
+/// response correlation, and configured request timeout.
+#[derive(Clone)]
+pub struct WeakPingHandle {
+    shared: Weak<Shared>,
+}
+
+impl WeakPingHandle {
+    /// Send the same root-channel request as [`Client::ping`].
+    ///
+    /// Returns [`ClientError::Shutdown`] after explicit shutdown, transport
+    /// closure, or dropping the last [`Client`], including for an unanswered
+    /// in-flight ping. Timeouts return [`ClientError::Cancelled`]; server errors
+    /// return [`ClientError::Rpc`]. Dropping this future removes its pending
+    /// response entry but does not retract a request already sent.
+    ///
+    /// The caller decides when keepalive is appropriate for the connection;
+    /// binding the handle does not start a ping or negotiate keepalive.
+    pub async fn ping(&self) -> Result<(), ClientError> {
+        let shared = self.shared.upgrade().ok_or(ClientError::Shutdown)?;
+        shared.ping(true).await
+    }
 }
 
 // ─── Server-initiated request handling ───────────────────────────────────────
@@ -354,10 +508,14 @@ pub struct Client {
 
 struct DriveHandle {
     handle: Mutex<Option<JoinHandle<()>>>,
+    shared: Weak<Shared>,
 }
 
 impl Drop for DriveHandle {
     fn drop(&mut self) {
+        if let Some(shared) = self.shared.upgrade() {
+            shared.stop_requests(None);
+        }
         if let Ok(mut guard) = self.handle.try_lock() {
             if let Some(h) = guard.take() {
                 h.abort();
@@ -373,41 +531,50 @@ impl Client {
         transport: T,
         config: ClientConfig,
     ) -> Result<Self, ClientError> {
+        Self::connect_with_request_ids(transport, config, Arc::new(RequestIds::new())).await
+    }
+
+    pub(crate) async fn connect_with_request_ids<T: Transport>(
+        mut transport: T,
+        config: ClientConfig,
+        request_ids: Arc<RequestIds>,
+    ) -> Result<Self, ClientError> {
         let (outbound_tx, outbound_rx) = mpsc::channel::<Outbound>(64);
         let (all_events_tx, _) = broadcast::channel::<ClientEvent>(config.subscription_buffer);
+        let (closed, _) = watch::channel(false);
         let shared = Arc::new(Shared {
-            pending: Mutex::new(HashMap::new()),
+            pending: std::sync::Mutex::new(HashMap::new()),
+            closed,
             subscriptions: Mutex::new(HashMap::new()),
             all_events: std::sync::Mutex::new(Some(all_events_tx)),
             outbound: outbound_tx,
-            next_id: AtomicU64::new(1),
+            request_ids,
             next_client_seq: AtomicU64::new(1),
             config,
             server_request_handler: std::sync::Mutex::new(None),
         });
 
+        transport.bind_client(WeakPingHandle {
+            shared: Arc::downgrade(&shared),
+        });
         let handle = tokio::spawn(drive_transport(transport, shared.clone(), outbound_rx));
+        let reader = Arc::new(DriveHandle {
+            handle: Mutex::new(Some(handle)),
+            shared: Arc::downgrade(&shared),
+        });
         Ok(Self {
             shared,
-            _reader: Arc::new(DriveHandle {
-                handle: Mutex::new(Some(handle)),
-            }),
+            _reader: reader,
         })
     }
 
-    /// Gracefully shut down the client, aborting any in-flight requests
-    /// with [`ClientError::Shutdown`].
+    /// Gracefully shut down the client.
+    ///
+    /// In-flight normal requests retain the `-32000` [`ClientError::Rpc`]
+    /// shutdown error; weak pings resolve with [`ClientError::Shutdown`].
     pub async fn shutdown(&self) {
+        self.shared.stop_requests(Some("client shut down"));
         let _ = self.shared.outbound.send(Outbound::Shutdown).await;
-        // Fail any pending in-flight requests.
-        let mut pending = self.shared.pending.lock().await;
-        for (_, tx) in pending.drain() {
-            let _ = tx.send(Err(JsonRpcError {
-                code: -32000,
-                message: "client shut down".into(),
-                data: None,
-            }));
-        }
     }
 
     /// Send a JSON-RPC request and await its result.
@@ -416,53 +583,7 @@ impl Client {
         P: Serialize,
         R: DeserializeOwned,
     {
-        let id = self.shared.next_id.fetch_add(1, Ordering::Relaxed);
-        let params_val = serde_json::to_value(&params)?;
-        let params_any = if params_val.is_null() {
-            None
-        } else {
-            Some(ahp_types::common::AnyValue::from(params_val))
-        };
-        let req = JsonRpcMessage::Request(JsonRpcRequest {
-            jsonrpc: JsonRpcVersion::V2,
-            id,
-            method: method.into(),
-            params: params_any,
-        });
-
-        let (tx, rx) = oneshot::channel();
-        {
-            let mut pending = self.shared.pending.lock().await;
-            pending.insert(id, tx);
-        }
-
-        if self
-            .shared
-            .outbound
-            .send(Outbound::Message(req))
-            .await
-            .is_err()
-        {
-            self.shared.pending.lock().await.remove(&id);
-            return Err(ClientError::Shutdown);
-        }
-
-        let result = match self.shared.config.default_request_timeout {
-            Some(dur) => match tokio::time::timeout(dur, rx).await {
-                Ok(r) => r,
-                Err(_) => {
-                    self.shared.pending.lock().await.remove(&id);
-                    return Err(ClientError::Cancelled);
-                }
-            },
-            None => rx.await,
-        };
-
-        match result {
-            Ok(Ok(value)) => Ok(serde_json::from_value(value)?),
-            Ok(Err(e)) => Err(ClientError::Rpc(e)),
-            Err(_) => Err(ClientError::Shutdown),
-        }
+        self.shared.request(method, params, false).await
     }
 
     /// Send a JSON-RPC notification (fire-and-forget).
@@ -539,17 +660,7 @@ impl Client {
     /// server responds regardless of whether `initialize` has completed or any
     /// subscriptions are held.
     pub async fn ping(&self) -> Result<(), ClientError> {
-        #[derive(Serialize)]
-        struct PingParams {
-            channel: &'static str,
-        }
-        self.request(
-            "ping",
-            PingParams {
-                channel: ROOT_RESOURCE_URI,
-            },
-        )
-        .await
+        self.shared.ping(false).await
     }
 
     /// Subscribe to a URI and obtain a handle that streams
@@ -842,6 +953,7 @@ async fn drive_transport<T: Transport>(
     shared: Arc<Shared>,
     mut outbound: mpsc::Receiver<Outbound>,
 ) {
+    let _requests = DriverRequests(shared.clone());
     loop {
         tokio::select! {
             outbound_msg = outbound.recv() => {
@@ -878,15 +990,8 @@ async fn drive_transport<T: Transport>(
         }
     }
 
-    // Teardown: close everything so waiters see Shutdown.
-    let mut pending = shared.pending.lock().await;
-    for (_, tx) in pending.drain() {
-        let _ = tx.send(Err(JsonRpcError {
-            code: -32000,
-            message: "transport closed".into(),
-            data: None,
-        }));
-    }
+    // Teardown: close everything and fail outstanding requests.
+    shared.stop_requests(Some("transport closed"));
     let mut subs = shared.subscriptions.lock().await;
     subs.clear();
     // Drop the top-level fan-out sender so any active
@@ -898,15 +1003,33 @@ async fn drive_transport<T: Transport>(
     }
 }
 
+struct DriverRequests(Arc<Shared>);
+
+impl Drop for DriverRequests {
+    fn drop(&mut self) {
+        self.0.stop_requests(None);
+    }
+}
+
 async fn dispatch_inbound(shared: &Arc<Shared>, msg: JsonRpcMessage) {
     match msg {
         JsonRpcMessage::SuccessResponse(r) => {
-            if let Some(tx) = shared.pending.lock().await.remove(&r.id) {
+            if let Some(tx) = shared
+                .pending
+                .lock()
+                .expect("pending mutex poisoned")
+                .remove(&r.id)
+            {
                 let _ = tx.send(Ok(r.result));
             }
         }
         JsonRpcMessage::ErrorResponse(r) => {
-            if let Some(tx) = shared.pending.lock().await.remove(&r.id) {
+            if let Some(tx) = shared
+                .pending
+                .lock()
+                .expect("pending mutex poisoned")
+                .remove(&r.id)
+            {
                 let _ = tx.send(Err(r.error));
             }
         }
@@ -1020,3 +1143,7 @@ async fn fan_out(shared: &Shared, channel: &Uri, event: SubscriptionEvent) {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "client_tests.rs"]
+mod tests;

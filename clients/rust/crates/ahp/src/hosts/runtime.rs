@@ -18,6 +18,7 @@ use ahp_types::state::{RootState, SessionSummary, SnapshotState};
 use tokio::sync::{broadcast, mpsc, oneshot, Notify};
 use tokio::task::JoinHandle;
 
+use crate::client::RequestIds;
 use crate::reducers::{apply_action_to_root, ReduceOutcome};
 use crate::{Client, ClientError, ClientEvent, DispatchHandle, SubscriptionEvent};
 
@@ -113,6 +114,7 @@ pub(super) fn spawn(
     let (cmd_tx, cmd_rx) = mpsc::channel(32);
     let runtime = HostRuntime {
         client_id: resolved_client_id,
+        request_ids: Arc::new(RequestIds::new()),
         config,
         cmd_rx,
         shared: shared.clone(),
@@ -133,6 +135,7 @@ pub(super) fn spawn(
 struct HostRuntime {
     config: HostConfig,
     client_id: String,
+    request_ids: Arc<RequestIds>,
     cmd_rx: mpsc::Receiver<HostCommand>,
     shared: Arc<HostShared>,
     fan_out: broadcast::Sender<HostSubscriptionEvent>,
@@ -260,7 +263,12 @@ impl HostRuntime {
             .open_transport(self.config.id.clone())
             .await?;
 
-        let client = Client::connect(transport, self.config.client_config.clone()).await?;
+        let client = Client::connect_with_request_ids(
+            transport,
+            self.config.client_config.clone(),
+            self.request_ids.clone(),
+        )
+        .await?;
 
         // Attach the events receiver BEFORE the initialize/reconnect
         // handshake so any notifications the server pushes between the

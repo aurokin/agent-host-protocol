@@ -65,6 +65,37 @@ impl Transport for MyTransport {
 
 See `tests/client_roundtrip.rs` for a complete in-memory example.
 
+### Transport-owned keepalive
+
+Override the optional synchronous
+`Transport::bind_client(&mut self, ping: ahp::WeakPingHandle)` callback to pass
+the handle to a transport-owned keepalive task. `Client::connect` binds it once,
+before transport I/O starts or any `initialize` / `reconnect` request can be
+sent. `BoxedTransport` forwards the callback, including for managed hosts.
+Subsequent handshakes on the same client do not bind it again.
+
+`WeakPingHandle::ping().await` uses the same root-channel request, ID allocator,
+response map, and configured timeout as `Client::ping`. It can therefore keep an
+initialized connection alive while session discovery is still pending. The
+transport owns the keepalive timing and any negotiation or activity gating;
+binding does not start keepalive.
+
+Neither a retained handle nor an in-flight weak ping owns the client driver.
+Explicit shutdown, transport closure, or dropping the last `Client` resolves
+weak pings with `ClientError::Shutdown`. Request timeouts remain
+`ClientError::Cancelled`, and server errors remain `ClientError::Rpc`. Cancelling
+a request future removes its pending response entry without retracting an
+already-sent request. Existing transports need no changes: binding defaults to
+a no-op on both `Transport` and the object-safe `DynTransport` adapter.
+
+Managed hosts retain their request ID allocator across connection attempts for
+the lifetime of one host supervisor, including failed handshakes. Late replies
+from an earlier transport cannot match a newly allocated request on that
+logical host. Independent hosts and standalone `Client::connect` calls still
+start independent ID sequences. Exhausting the `u64` request ID space fails
+explicitly with `ClientError::Transport(TransportError::Protocol(_))` rather
+than reusing an ID.
+
 ## See also
 
 - [`ahp-types`](https://crates.io/crates/ahp-types) — wire types only (no I/O)

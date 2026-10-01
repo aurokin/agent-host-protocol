@@ -64,6 +64,7 @@
 use std::future::Future;
 use std::pin::Pin;
 
+use crate::client::WeakPingHandle;
 use crate::error::TransportError;
 use ahp_types::messages::JsonRpcMessage;
 
@@ -112,6 +113,15 @@ impl TransportMessage {
 /// client sends indefinitely until the underlying connection closes,
 /// and `recv` signals closure by returning `None`.
 pub trait Transport: Send + 'static {
+    /// Bind a non-owning ping handle before the client starts transport I/O.
+    ///
+    /// Called once by [`crate::Client::connect`], not on subsequent
+    /// initialize/reconnect requests on the same client. A transport may pass
+    /// the handle to its keepalive task without keeping the client alive.
+    /// The transport remains responsible for keepalive timing and negotiation.
+    /// The default implementation is a no-op.
+    fn bind_client(&mut self, _ping: WeakPingHandle) {}
+
     /// Send a single message.
     ///
     /// Errors returned here are typically fatal for the transport
@@ -154,6 +164,9 @@ pub trait Transport: Send + 'static {
 /// allocation cost (typically: registries that hold one transport per
 /// host).
 pub trait DynTransport: Send + 'static {
+    /// Object-safe analogue of [`Transport::bind_client`].
+    fn bind_client(&mut self, _ping: WeakPingHandle) {}
+
     /// Object-safe analogue of [`Transport::send`].
     fn send<'a>(
         &'a mut self,
@@ -172,6 +185,10 @@ pub trait DynTransport: Send + 'static {
 }
 
 impl<T: Transport> DynTransport for T {
+    fn bind_client(&mut self, ping: WeakPingHandle) {
+        <T as Transport>::bind_client(self, ping);
+    }
+
     fn send<'a>(
         &'a mut self,
         msg: TransportMessage,
@@ -247,6 +264,10 @@ impl std::fmt::Debug for BoxedTransport {
 }
 
 impl Transport for BoxedTransport {
+    fn bind_client(&mut self, ping: WeakPingHandle) {
+        self.inner.bind_client(ping);
+    }
+
     fn send(
         &mut self,
         msg: TransportMessage,

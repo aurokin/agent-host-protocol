@@ -1,0 +1,5 @@
+{
+  "type": "added",
+  "message": "Rust transport client binding supplies a non-owning `WeakPingHandle` for client-correlated keepalive during discovery; managed hosts retain request IDs across reconnect attempts, with deterministic weak-ping shutdown and cancelled-request cleanup.",
+  "targets": ["rust"]
+}

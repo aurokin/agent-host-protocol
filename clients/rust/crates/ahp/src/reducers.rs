@@ -2448,7 +2448,6 @@ mod tests {
             title: "c1".into(),
             status: SessionStatus::Idle.bits(),
             activity: None,
-            background_work: None,
             modified_at: "1970-01-01T00:00:00.000Z".into(),
             changes: None,
             origin: None,

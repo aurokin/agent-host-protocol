@@ -1873,7 +1873,6 @@ public static class Reducers
         if (ch.Title is not null) { s.Title = ch.Title; }
         if (ch.Status is not null) { s.Status = ch.Status.Value; }
         if (ch.Activity is not null) { s.Activity = ch.Activity; }
-        if (ch.BackgroundWork is not null) { s.BackgroundWork = ch.BackgroundWork; }
         if (ch.ModifiedAt is not null) { s.ModifiedAt = ch.ModifiedAt; }
         if (ch.Changes is not null) { s.Changes = ch.Changes; }
         if (ch.Origin is not null) { s.Origin = ch.Origin; }

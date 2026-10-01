@@ -79,8 +79,6 @@ type PartialChatSummary struct {
 	Status *SessionStatus `json:"status,omitempty"`
 	// Human-readable description of what the chat is currently doing
 	Activity *string `json:"activity,omitempty"`
-	// Preserve an explicitly empty background work list in a summary update.
-	BackgroundWork *[]BackgroundWork `json:"backgroundWork,omitempty"`
 	// Last modification timestamp (ISO 8601, e.g. `"2025-03-10T18:42:03.123Z"`)
 	ModifiedAt *string `json:"modifiedAt,omitempty"`
 	// Aggregate summary of file changes associated with this chat

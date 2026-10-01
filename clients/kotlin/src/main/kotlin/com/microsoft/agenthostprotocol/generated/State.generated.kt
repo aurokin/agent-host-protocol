@@ -2179,7 +2179,15 @@ data class SessionChatSummary(
      * lists without subscribing to the session channel. Absence means the
      * chat is not archived.
      */
-    val archived: Boolean? = null
+    val archived: Boolean? = null,
+    /**
+     * Aggregate summary of file changes associated with this chat.
+     *
+     * Servers may populate this so session lists can show per-chat change
+     * counts without subscribing to the session or chat channel. Updates travel
+     * with the rest of the catalog in `root/sessionSummaryChanged`.
+     */
+    val changes: ChangesSummary? = null
 )
 
 @Serializable

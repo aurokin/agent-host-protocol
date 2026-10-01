@@ -2297,19 +2297,27 @@ public struct SessionChatSummary: Codable, Sendable {
     /// lists without subscribing to the session channel. Absence means the
     /// chat is not archived.
     public var archived: Bool?
+    /// Aggregate summary of file changes associated with this chat.
+    ///
+    /// Servers may populate this so session lists can show per-chat change
+    /// counts without subscribing to the session or chat channel. Updates travel
+    /// with the rest of the catalog in `root/sessionSummaryChanged`.
+    public var changes: ChangesSummary?
 
     public init(
         resource: String,
         title: String,
         origin: ChatOrigin? = nil,
         interactivity: ChatInteractivity? = nil,
-        archived: Bool? = nil
+        archived: Bool? = nil,
+        changes: ChangesSummary? = nil
     ) {
         self.resource = resource
         self.title = title
         self.origin = origin
         self.interactivity = interactivity
         self.archived = archived
+        self.changes = changes
     }
 }
 

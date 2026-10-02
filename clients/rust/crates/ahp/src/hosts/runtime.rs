@@ -318,21 +318,6 @@ impl HostRuntime {
             }
         };
 
-        // Refresh session summaries from `listSessions` — cheap on first
-        // connect, kept in sync by notifications afterward. Failures are
-        // non-fatal: we just leave the cache as-is and log.
-        let summaries: Result<ListSessionsResult, ClientError> = client
-            .request(
-                "listSessions",
-                ListSessionsParams {
-                    channel: ROOT_RESOURCE_URI.to_string(),
-                    meta: None,
-                    limit: None,
-                    cursor: None,
-                },
-            )
-            .await;
-
         // Bump generation and install the new client.
         let new_generation = {
             let mut state = self.shared.lock().await;
@@ -360,14 +345,6 @@ impl HostRuntime {
                     .completion_trigger_characters
                     .clone()
                     .unwrap_or_default();
-            }
-            if let Ok(list) = summaries {
-                state.session_summaries.clear();
-                for summary in list.items {
-                    state
-                        .session_summaries
-                        .insert(summary.resource.clone(), summary);
-                }
             }
             state.generation
         };
@@ -456,11 +433,33 @@ impl HostRuntime {
     }
 
     async fn run_connection(&mut self, mut events: crate::ClientEventStream) -> InnerOutcome {
+        let (client, generation) = {
+            let state = self.shared.lock().await;
+            (
+                state.current_client.clone().expect("connected client"),
+                state.generation,
+            )
+        };
+        let refresh = client.request::<_, ListSessionsResult>(
+            "listSessions",
+            ListSessionsParams {
+                channel: ROOT_RESOURCE_URI.to_string(),
+                meta: None,
+                limit: None,
+                cursor: None,
+            },
+        );
+        tokio::pin!(refresh);
+        let mut refreshing = true;
+        let mut updates = BTreeMap::new();
         loop {
             tokio::select! {
                 _ = self.shutdown_signal.notified() => return InnerOutcome::Shutdown,
                 ev = events.recv() => match ev {
                     Some(event) => {
+                        if refreshing {
+                            record_session_update(&mut updates, &event.event);
+                        }
                         self.handle_event(event).await;
                     }
                     None => return InnerOutcome::Disconnected,
@@ -483,6 +482,40 @@ impl HostRuntime {
                         let result = self.handle_dispatch(channel, *action).await;
                         let _ = reply.send(result);
                     }
+                },
+                result = &mut refresh, if refreshing => {
+                    // Reconcile the finite queued prefix before replacing the cache.
+                    // Later events are applied normally after this refresh commits.
+                    for event in events.drain_buffered() {
+                        record_session_update(&mut updates, &event.event);
+                        self.handle_event(event).await;
+                    }
+                    refreshing = false;
+                    match result {
+                        Ok(list) => {
+                            let mut summaries: BTreeMap<_, _> = list.items.into_iter()
+                                .map(|summary| (summary.resource.clone(), summary)).collect();
+                            for (uri, update) in std::mem::take(&mut updates) {
+                                match update {
+                                    SessionUpdate::Added(summary) => { summaries.insert(uri, summary); }
+                                    SessionUpdate::Removed => { summaries.remove(&uri); }
+                                    SessionUpdate::Changed(changes) => {
+                                        if let Some(summary) = summaries.get_mut(&uri) {
+                                            apply_summary_changes(summary, &changes);
+                                        }
+                                    }
+                                }
+                            }
+                            let mut state = self.shared.lock().await;
+                            if state.generation == generation && state.current_client.is_some() {
+                                state.session_summaries = summaries;
+                            }
+                        }
+                        Err(err) => tracing::warn!(
+                            host_id = %self.config.id, ?err, "session refresh failed"
+                        ),
+                    }
+                    updates.clear();
                 },
             }
         }
@@ -748,6 +781,73 @@ fn apply_summary_changes(
     if let Some(v) = &changes.changes {
         existing.changes = Some(v.clone());
     }
+    if let Some(v) = &changes.meta {
+        existing.meta = Some(v.clone());
+    }
+    if let Some(v) = &changes.chats {
+        existing.chats = Some(v.clone());
+    }
+    if let Some(v) = &changes.default_chat {
+        existing.default_chat = Some(v.clone());
+    }
+}
+
+enum SessionUpdate {
+    Added(SessionSummary),
+    Removed,
+    Changed(ahp_types::notifications::PartialSessionSummary),
+}
+
+fn record_session_update(updates: &mut BTreeMap<Uri, SessionUpdate>, event: &SubscriptionEvent) {
+    match event {
+        SubscriptionEvent::SessionAdded(n) => {
+            updates.insert(
+                n.summary.resource.clone(),
+                SessionUpdate::Added(n.summary.clone()),
+            );
+        }
+        SubscriptionEvent::SessionRemoved(n) => {
+            updates.insert(n.session.clone(), SessionUpdate::Removed);
+        }
+        SubscriptionEvent::SessionSummaryChanged(n) => {
+            match updates
+                .entry(n.session.clone())
+                .or_insert_with(|| SessionUpdate::Changed(n.changes.clone()))
+            {
+                SessionUpdate::Added(summary) => apply_summary_changes(summary, &n.changes),
+                SessionUpdate::Removed => {}
+                SessionUpdate::Changed(changes) => merge_summary_changes(changes, &n.changes),
+            }
+        }
+        _ => {}
+    }
+}
+
+fn merge_summary_changes(
+    existing: &mut ahp_types::notifications::PartialSessionSummary,
+    changes: &ahp_types::notifications::PartialSessionSummary,
+) {
+    macro_rules! merge_fields {
+        ($($field:ident),+ $(,)?) => {
+            $(if changes.$field.is_some() { existing.$field = changes.$field.clone(); })+
+        };
+    }
+    merge_fields!(
+        provider,
+        title,
+        status,
+        activity,
+        origin,
+        modified_at,
+        created_at,
+        project,
+        working_directories,
+        annotations,
+        changes,
+        meta,
+        chats,
+        default_chat
+    );
 }
 
 // ─── Random helpers (no external dep on `rand`) ─────────────────────────────

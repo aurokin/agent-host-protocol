@@ -141,9 +141,8 @@
 //! dropped; [`Client::shutdown`] requests graceful transport closure.
 //! Dropping the last client resolves in-flight requests with
 //! [`ClientError::Shutdown`]. Explicit shutdown and transport closure retain
-//! the normal `-32000` [`ClientError::Rpc`] teardown error. Non-owning
-//! [`WeakPingHandle`] requests resolve with [`ClientError::Shutdown`] for
-//! each of these lifecycle endings.
+//! the normal `-32000` [`ClientError::Rpc`] teardown error. Automatic idle
+//! keepalive is owned by the same driver and ends with it.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -159,9 +158,9 @@ pub mod transport;
 pub use ahp_types;
 
 pub use client::{
-    Client, ClientConfig, ClientEvent, ClientEventStream, DispatchHandle, ResourceRequestHandlers,
-    ServerRequestFuture, ServerRequestHandler, SessionSubscription, SubscriptionEvent,
-    WeakPingHandle,
+    Client, ClientConfig, ClientEvent, ClientEventStream, DispatchHandle, KeepaliveConfig,
+    ResourceRequestHandlers, ServerRequestFuture, ServerRequestHandler, SessionSubscription,
+    SubscriptionEvent,
 };
 pub use error::{ClientError, TransportError};
 pub use multi_host_state_mirror::{HostedResourceKey, MultiHostStateMirror};

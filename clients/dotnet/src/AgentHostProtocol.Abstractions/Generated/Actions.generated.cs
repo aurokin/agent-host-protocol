@@ -119,6 +119,8 @@ public readonly struct ActionType : IEquatable<ActionType>
 
     public static readonly ActionType ChatDraftChanged = new ActionType("chat/draftChanged");
 
+    public static readonly ActionType ChatIsReadChanged = new ActionType("chat/isReadChanged");
+
     public static readonly ActionType ChatIsArchivedChanged = new ActionType("chat/isArchivedChanged");
 
     public static readonly ActionType ChatInputRequested = new ActionType("chat/inputRequested");
@@ -1159,7 +1161,10 @@ public sealed record SessionChatRemovedAction
 /// carried in `changes`. No-op when no entry with `chat` exists — clients
 /// SHOULD then wait for a {@link SessionChatAddedAction | `session/chatAdded`}.
 ///
-/// Mirrors the root-channel `root/sessionSummaryChanged` notification.</summary>
+/// Mirrors the root-channel `root/sessionSummaryChanged` notification.
+/// When `changes.status` changes, the host MUST project that exact value into
+/// the matching `SessionChatSummary.status` field and publish
+/// the updated compact chat catalog through `root/sessionSummaryChanged`.</summary>
 public sealed record SessionChatUpdatedAction
 {
     public ActionType Type { get; init; } = ActionType.SessionChatUpdated;
@@ -2015,6 +2020,23 @@ public sealed record ChatDraftChangedAction
     public Message? Draft { get; init; }
 }
 
+/// <summary>The read state of the chat changed.
+///
+/// Dispatched by a client to mark any known chat, including the owning
+/// session's default chat, as read (e.g. after viewing it) or unread. This
+/// changes only the addressed chat; it does not change the read state of its
+/// owning session or sibling chats. Use `session/isReadChanged` only to change
+/// the owning session's independent read state. After accepting this action,
+/// the host also synchronizes the addressed chat's `ChatSummary.status` and
+/// `SessionChatSummary.status` projections.</summary>
+public sealed record ChatIsReadChangedAction
+{
+    public ActionType Type { get; init; } = ActionType.ChatIsReadChanged;
+
+    /// <summary>Whether the chat has been read</summary>
+    public bool IsRead { get; init; }
+}
+
 /// <summary>The archived state of the chat changed.
 ///
 /// Dispatched by a client to archive a chat independently of its owning
@@ -2811,6 +2833,7 @@ internal sealed class StateActionConverter : UnionConverter<StateAction>
         ["chat/pendingMessageRemoved"] = typeof(ChatPendingMessageRemovedAction),
         ["chat/queuedMessagesReordered"] = typeof(ChatQueuedMessagesReorderedAction),
         ["chat/draftChanged"] = typeof(ChatDraftChangedAction),
+        ["chat/isReadChanged"] = typeof(ChatIsReadChangedAction),
         ["chat/isArchivedChanged"] = typeof(ChatIsArchivedChangedAction),
         ["chat/inputRequested"] = typeof(ChatInputRequestedAction),
         ["chat/inputAnswerChanged"] = typeof(ChatInputAnswerChangedAction),

@@ -1130,6 +1130,9 @@ public static class Reducers
             case ChatDraftChangedAction a:
                 state.Draft = a.Draft;
                 return ReduceOutcome.Applied;
+            case ChatIsReadChangedAction a:
+                state.Status = WithStatusFlag(state.Status, SessionStatus.IsRead, a.IsRead);
+                return ReduceOutcome.Applied;
             case ChatIsArchivedChangedAction a:
                 state.Status = WithStatusFlag(state.Status, SessionStatus.IsArchived, a.IsArchived);
                 return ReduceOutcome.Applied;
@@ -2566,6 +2569,7 @@ public static class Reducers
         "chat/pendingMessageRemoved",
         "chat/queuedMessagesReordered",
         "chat/draftChanged",
+        "chat/isReadChanged",
         "chat/isArchivedChanged",
         "chat/inputAnswerChanged",
         "chat/inputCompleted",

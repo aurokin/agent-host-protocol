@@ -188,6 +188,17 @@ public sealed class NativeReducerTests
         Assert.True(Reducers.IsClientDispatchable(action));
     }
 
+    [Fact]
+    public void ClientDispatchable_TrueForChatIsReadChanged()
+    {
+        var action = new StateAction(new ChatIsReadChangedAction
+        {
+            Type = ActionType.ChatIsReadChanged,
+            IsRead = true,
+        });
+        Assert.True(Reducers.IsClientDispatchable(action));
+    }
+
     // AHP 0.6.0 (#328): changeset/filesReviewChanged is the first client-dispatchable
     // changeset action — a reviewer toggles per-file review state directly through the
     // write-ahead reducer. Every other changeset/* action remains server-only.

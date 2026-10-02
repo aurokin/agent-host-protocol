@@ -77,6 +77,7 @@ pub enum ActionType {
     ChatPendingMessageRemoved,
     ChatQueuedMessagesReordered,
     ChatDraftChanged,
+    ChatIsReadChanged,
     ChatIsArchivedChanged,
     ChatInputRequested,
     ChatInputAnswerChanged,
@@ -218,6 +219,7 @@ impl serde::Serialize for ActionType {
                 serializer.serialize_str("chat/queuedMessagesReordered")
             }
             Self::ChatDraftChanged => serializer.serialize_str("chat/draftChanged"),
+            Self::ChatIsReadChanged => serializer.serialize_str("chat/isReadChanged"),
             Self::ChatIsArchivedChanged => serializer.serialize_str("chat/isArchivedChanged"),
             Self::ChatInputRequested => serializer.serialize_str("chat/inputRequested"),
             Self::ChatInputAnswerChanged => serializer.serialize_str("chat/inputAnswerChanged"),
@@ -369,6 +371,7 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "chat/pendingMessageRemoved" => Self::ChatPendingMessageRemoved,
             "chat/queuedMessagesReordered" => Self::ChatQueuedMessagesReordered,
             "chat/draftChanged" => Self::ChatDraftChanged,
+            "chat/isReadChanged" => Self::ChatIsReadChanged,
             "chat/isArchivedChanged" => Self::ChatIsArchivedChanged,
             "chat/inputRequested" => Self::ChatInputRequested,
             "chat/inputAnswerChanged" => Self::ChatInputAnswerChanged,
@@ -535,6 +538,9 @@ pub struct SessionChatRemovedAction {
 /// SHOULD then wait for a {@link SessionChatAddedAction | `session/chatAdded`}.
 ///
 /// Mirrors the root-channel `root/sessionSummaryChanged` notification.
+/// When `changes.status` changes, the host MUST project that exact value into
+/// the matching `SessionChatSummary.status` field and publish
+/// the updated compact chat catalog through `root/sessionSummaryChanged`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionChatUpdatedAction {
@@ -1474,6 +1480,22 @@ pub struct ChatDraftChangedAction {
     /// New draft message, or `undefined` to clear it
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub draft: Option<Message>,
+}
+
+/// The read state of the chat changed.
+///
+/// Dispatched by a client to mark any known chat, including the owning
+/// session's default chat, as read (e.g. after viewing it) or unread. This
+/// changes only the addressed chat; it does not change the read state of its
+/// owning session or sibling chats. Use `session/isReadChanged` only to change
+/// the owning session's independent read state. After accepting this action,
+/// the host also synchronizes the addressed chat's `ChatSummary.status` and
+/// `SessionChatSummary.status` projections.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatIsReadChangedAction {
+    /// Whether the chat has been read
+    pub is_read: bool,
 }
 
 /// The archived state of the chat changed.
@@ -2431,6 +2453,8 @@ pub enum StateAction {
     ChatQueuedMessagesReordered(ChatQueuedMessagesReorderedAction),
     #[serde(rename = "chat/draftChanged")]
     ChatDraftChanged(ChatDraftChangedAction),
+    #[serde(rename = "chat/isReadChanged")]
+    ChatIsReadChanged(ChatIsReadChangedAction),
     #[serde(rename = "chat/isArchivedChanged")]
     ChatIsArchivedChanged(ChatIsArchivedChangedAction),
     #[serde(rename = "chat/inputRequested")]

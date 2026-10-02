@@ -3168,14 +3168,16 @@ public sealed record SessionChatSummary
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ChatInteractivity? Interactivity { get; init; }
 
-    /// <summary>Whether this chat has been archived independently of its owning session
-    /// (see `chat/isArchivedChanged`).
+    /// <summary>Current chat status, matching {@link ChatSummary.status}.
     ///
-    /// Generic clients use this to group or filter archived chats in session
-    /// lists without subscribing to the session channel. Absence means the
-    /// chat is not archived.</summary>
+    /// Includes the activity bits and the orthogonal {@link SessionStatus.IsRead}
+    /// and {@link SessionStatus.IsArchived} flags. Generic clients use these bits
+    /// to present read, unread, or archived chats in session lists without
+    /// subscribing to the session or chat channel. Absence means the host did
+    /// not provide the status; clients MUST treat it as unknown, not as unread
+    /// or unarchived.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public bool? Archived { get; init; }
+    public SessionStatus? Status { get; init; }
 
     /// <summary>Aggregate summary of file changes associated with this chat.
     ///

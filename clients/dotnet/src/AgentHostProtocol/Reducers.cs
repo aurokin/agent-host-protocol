@@ -1012,6 +1012,9 @@ public static class Reducers
             case ChatChangesetsChangedAction a:
                 state.Changesets = CopyList(a.Changesets);
                 return ReduceOutcome.Applied;
+            case ChatCanvasesChangedAction a:
+                state.Canvases = CopyList(a.Canvases);
+                return ReduceOutcome.Applied;
             case ChatWorkingDirectorySetAction a:
                 {
                     // Membership keyed by the directory URI, over this chat's subset of
@@ -1129,6 +1132,9 @@ public static class Reducers
                 return ApplyChatQueuedMessagesReordered(state, a);
             case ChatDraftChangedAction a:
                 state.Draft = a.Draft;
+                return ReduceOutcome.Applied;
+            case ChatIsReadChangedAction a:
+                state.Status = WithStatusFlag(state.Status, SessionStatus.IsRead, a.IsRead);
                 return ReduceOutcome.Applied;
             case ChatIsArchivedChangedAction a:
                 state.Status = WithStatusFlag(state.Status, SessionStatus.IsArchived, a.IsArchived);
@@ -2100,6 +2106,26 @@ public static class Reducers
         return ReduceOutcome.NoOp;
     }
 
+    /// <summary>Replaces live canvas state or returns OutOfScope.</summary>
+    public static ReduceOutcome ApplyToCanvas(CanvasState state, StateAction action)
+    {
+        Guard.ThrowIfNull(state, nameof(state));
+        Guard.ThrowIfNull(action, nameof(action));
+        if (action.Value is not CanvasStateChangedAction a)
+        {
+            return ReduceOutcome.OutOfScope;
+        }
+
+        state.InstanceId = a.Canvas.InstanceId;
+        state.ExtensionId = a.Canvas.ExtensionId;
+        state.ExtensionName = a.Canvas.ExtensionName;
+        state.CanvasId = a.Canvas.CanvasId;
+        state.Title = a.Canvas.Title;
+        state.Status = a.Canvas.Status;
+        state.Url = a.Canvas.Url;
+        return ReduceOutcome.Applied;
+    }
+
     // ─── Terminal Reducer ──────────────────────────────────────────────────
 
     /// <summary>
@@ -2566,6 +2592,7 @@ public static class Reducers
         "chat/pendingMessageRemoved",
         "chat/queuedMessagesReordered",
         "chat/draftChanged",
+        "chat/isReadChanged",
         "chat/isArchivedChanged",
         "chat/inputAnswerChanged",
         "chat/inputCompleted",

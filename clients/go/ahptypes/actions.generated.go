@@ -49,6 +49,8 @@ const (
 	ActionTypeChatBackgroundWorkRemoved           ActionType = "chat/backgroundWorkRemoved"
 	ActionTypeChatMovableChanged                  ActionType = "chat/movableChanged"
 	ActionTypeChatChangesetsChanged               ActionType = "chat/changesetsChanged"
+	ActionTypeChatCanvasesChanged                 ActionType = "chat/canvasesChanged"
+	ActionTypeCanvasStateChanged                  ActionType = "canvas/stateChanged"
 	ActionTypeChatWorkingDirectorySet             ActionType = "chat/workingDirectorySet"
 	ActionTypeChatWorkingDirectoryRemoved         ActionType = "chat/workingDirectoryRemoved"
 	ActionTypeSessionTitleChanged                 ActionType = "session/titleChanged"
@@ -66,6 +68,7 @@ const (
 	ActionTypeChatPendingMessageRemoved           ActionType = "chat/pendingMessageRemoved"
 	ActionTypeChatQueuedMessagesReordered         ActionType = "chat/queuedMessagesReordered"
 	ActionTypeChatDraftChanged                    ActionType = "chat/draftChanged"
+	ActionTypeChatIsReadChanged                   ActionType = "chat/isReadChanged"
 	ActionTypeChatIsArchivedChanged               ActionType = "chat/isArchivedChanged"
 	ActionTypeChatInputRequested                  ActionType = "chat/inputRequested"
 	ActionTypeChatInputAnswerChanged              ActionType = "chat/inputAnswerChanged"
@@ -211,6 +214,9 @@ type SessionChatRemovedAction struct {
 // SHOULD then wait for a {@link SessionChatAddedAction | `session/chatAdded`}.
 //
 // Mirrors the root-channel `root/sessionSummaryChanged` notification.
+// When `changes.status` changes, the host MUST project that exact value into
+// the matching `SessionChatSummary.status` field and publish
+// the updated compact chat catalog through `root/sessionSummaryChanged`.
 type SessionChatUpdatedAction struct {
 	Type ActionType `json:"type"`
 	// The URI of the chat whose summary changed.
@@ -704,6 +710,27 @@ type ChatChangesetsChangedAction struct {
 	Changesets []Changeset `json:"changesets,omitempty"`
 }
 
+// The live canvas channels exposed by this chat changed.
+//
+// Replaces {@link ChatState.canvases | `state.canvases`} entirely. Set to
+// `undefined` to clear the collection.
+type ChatCanvasesChangedAction struct {
+	Type ActionType `json:"type"`
+	// New canvas channel references, or `undefined` to clear the collection.
+	Canvases []CanvasReference `json:"canvases,omitempty"`
+}
+
+// The presentation state for this canvas changed.
+//
+// Replaces the subscribed canvas channel state entirely. Full-replacement
+// semantics intentionally keep this early-development channel free to evolve
+// without expanding the stable chat action surface.
+type CanvasStateChangedAction struct {
+	Type ActionType `json:"type"`
+	// New authoritative canvas state.
+	Canvas CanvasState `json:"canvas"`
+}
+
 // Session title updated. Fired by the server when the title is auto-generated
 // from conversation, or dispatched by a client to rename a session.
 type SessionTitleChangedAction struct {
@@ -811,6 +838,21 @@ type ChatDraftChangedAction struct {
 	Type ActionType `json:"type"`
 	// New draft message, or `undefined` to clear it
 	Draft *Message `json:"draft,omitempty"`
+}
+
+// The read state of the chat changed.
+//
+// Dispatched by a client to mark any known chat, including the owning
+// session's default chat, as read (e.g. after viewing it) or unread. This
+// changes only the addressed chat; it does not change the read state of its
+// owning session or sibling chats. Use `session/isReadChanged` only to change
+// the owning session's independent read state. After accepting this action,
+// the host also synchronizes the addressed chat's `ChatSummary.status` and
+// `SessionChatSummary.status` projections.
+type ChatIsReadChangedAction struct {
+	Type ActionType `json:"type"`
+	// Whether the chat has been read
+	IsRead bool `json:"isRead"`
 }
 
 // The archived state of the chat changed.
@@ -1794,6 +1836,8 @@ func (*ChatBackgroundWorkSetAction) isStateAction()               {}
 func (*ChatBackgroundWorkRemovedAction) isStateAction()           {}
 func (*ChatMovableChangedAction) isStateAction()                  {}
 func (*ChatChangesetsChangedAction) isStateAction()               {}
+func (*ChatCanvasesChangedAction) isStateAction()                 {}
+func (*CanvasStateChangedAction) isStateAction()                  {}
 func (*SessionTitleChangedAction) isStateAction()                 {}
 func (*ChatUsageAction) isStateAction()                           {}
 func (*ChatReasoningAction) isStateAction()                       {}
@@ -1801,6 +1845,7 @@ func (*ChatPendingMessageSetAction) isStateAction()               {}
 func (*ChatPendingMessageRemovedAction) isStateAction()           {}
 func (*ChatQueuedMessagesReorderedAction) isStateAction()         {}
 func (*ChatDraftChangedAction) isStateAction()                    {}
+func (*ChatIsReadChangedAction) isStateAction()                   {}
 func (*ChatIsArchivedChangedAction) isStateAction()               {}
 func (*ChatInputRequestedAction) isStateAction()                  {}
 func (*ChatInputAnswerChangedAction) isStateAction()              {}
@@ -2067,6 +2112,18 @@ func (u *StateAction) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		u.Value = &value
+	case "chat/canvasesChanged":
+		var value ChatCanvasesChangedAction
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Value = &value
+	case "canvas/stateChanged":
+		var value CanvasStateChangedAction
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Value = &value
 	case "session/titleChanged":
 		var value SessionTitleChangedAction
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -2105,6 +2162,12 @@ func (u *StateAction) UnmarshalJSON(data []byte) error {
 		u.Value = &value
 	case "chat/draftChanged":
 		var value ChatDraftChangedAction
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.Value = &value
+	case "chat/isReadChanged":
+		var value ChatIsReadChangedAction
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}

@@ -112,6 +112,7 @@ SessionSummary {
   workingDirectories?: URI[]   // equal-peer working directories
   annotations?: AnnotationsSummary
   changes?: ChangesSummary
+  chats?: SessionChatSummary[] // compact list presentation, including per-chat status
 }
 
 ProjectInfo {
@@ -119,6 +120,14 @@ ProjectInfo {
   displayName: string
 }
 ```
+
+`SessionChatSummary.status` is the same `SessionStatus` bitset as
+`ChatSummary.status`, including activity, read, and archived state. Hosts keep
+both projections synchronized with the chat's state so session lists can
+render per-chat status without subscribing to every session or chat. Clients
+check `SessionStatus.IsRead` and `SessionStatus.IsArchived` with bitwise
+operations rather than separate boolean fields. The compact `status` field
+is optional to ease adoption; absence means unknown, not unread or unarchived.
 
 The `status` bitset encodes both the session's activity state and metadata flags like read/archived state. See the [Session Status Bitset](#session-status-bitset) table below for details.
 
@@ -132,10 +141,15 @@ The `status` bitset encodes both the session's activity state and metadata flags
 | `SessionStatus.Error`       |   `2` | `1 << 1`               | The most recent turn ended with an error.                                                                                                                                             |
 | `SessionStatus.InProgress`  |   `8` | `1 << 3`               | A turn is active.                                                                                                                                                                     |
 | `SessionStatus.InputNeeded` |  `24` | `(1 << 3) \| (1 << 4)` | A turn is active and either at least one user input request is open, or at least one tool call is awaiting user confirmation (pre- or post-execution). Includes the `InProgress` bit. |
-| `SessionStatus.IsRead`      |  `32` | `1 << 5`               | The client has viewed this session since its last modification. Cleared automatically when a new turn starts or an input request arrives. Toggled via `session/isReadChanged`.        |
+| `SessionStatus.IsRead`      |  `32` | `1 << 5`               | The client has viewed this session or chat since its last modification. Cleared automatically when a new turn starts or an input request arrives. Toggled via `session/isReadChanged` or `chat/isReadChanged` on the corresponding channel. |
 | `SessionStatus.IsArchived`  |  `64` | `1 << 6`               | The session has been archived by the client. Toggled via `session/isArchivedChanged`.                                                                                                 |
 
 Bits 0–4 encode mutually-exclusive **activity** status (exactly one is set at a time). Bits 5+ encode orthogonal **metadata** flags that may be combined with any activity status via bitwise OR.
+
+Read state is scoped to the addressed channel. `chat/isReadChanged` changes any
+known chat, including a default chat, without changing its owning session or
+sibling chats. `session/isReadChanged` changes only the session's independent
+read state.
 
 For example, `(status & SessionStatus.InProgress) !== 0` is true for both `InProgress` and `InputNeeded`. A session that is idle, read, and archived has status `1 | 32 | 64 = 97`.
 

@@ -36,6 +36,8 @@ public enum ActionType: Codable, Sendable, Equatable {
     case chatBackgroundWorkRemoved
     case chatMovableChanged
     case chatChangesetsChanged
+    case chatCanvasesChanged
+    case canvasStateChanged
     case chatWorkingDirectorySet
     case chatWorkingDirectoryRemoved
     case sessionTitleChanged
@@ -53,6 +55,7 @@ public enum ActionType: Codable, Sendable, Equatable {
     case chatPendingMessageRemoved
     case chatQueuedMessagesReordered
     case chatDraftChanged
+    case chatIsReadChanged
     case chatIsArchivedChanged
     case chatInputRequested
     case chatInputAnswerChanged
@@ -146,6 +149,8 @@ public enum ActionType: Codable, Sendable, Equatable {
         case "chat/backgroundWorkRemoved": self = .chatBackgroundWorkRemoved
         case "chat/movableChanged": self = .chatMovableChanged
         case "chat/changesetsChanged": self = .chatChangesetsChanged
+        case "chat/canvasesChanged": self = .chatCanvasesChanged
+        case "canvas/stateChanged": self = .canvasStateChanged
         case "chat/workingDirectorySet": self = .chatWorkingDirectorySet
         case "chat/workingDirectoryRemoved": self = .chatWorkingDirectoryRemoved
         case "session/titleChanged": self = .sessionTitleChanged
@@ -163,6 +168,7 @@ public enum ActionType: Codable, Sendable, Equatable {
         case "chat/pendingMessageRemoved": self = .chatPendingMessageRemoved
         case "chat/queuedMessagesReordered": self = .chatQueuedMessagesReordered
         case "chat/draftChanged": self = .chatDraftChanged
+        case "chat/isReadChanged": self = .chatIsReadChanged
         case "chat/isArchivedChanged": self = .chatIsArchivedChanged
         case "chat/inputRequested": self = .chatInputRequested
         case "chat/inputAnswerChanged": self = .chatInputAnswerChanged
@@ -256,6 +262,8 @@ public enum ActionType: Codable, Sendable, Equatable {
         case .chatBackgroundWorkRemoved: try container.encode("chat/backgroundWorkRemoved")
         case .chatMovableChanged: try container.encode("chat/movableChanged")
         case .chatChangesetsChanged: try container.encode("chat/changesetsChanged")
+        case .chatCanvasesChanged: try container.encode("chat/canvasesChanged")
+        case .canvasStateChanged: try container.encode("canvas/stateChanged")
         case .chatWorkingDirectorySet: try container.encode("chat/workingDirectorySet")
         case .chatWorkingDirectoryRemoved: try container.encode("chat/workingDirectoryRemoved")
         case .sessionTitleChanged: try container.encode("session/titleChanged")
@@ -273,6 +281,7 @@ public enum ActionType: Codable, Sendable, Equatable {
         case .chatPendingMessageRemoved: try container.encode("chat/pendingMessageRemoved")
         case .chatQueuedMessagesReordered: try container.encode("chat/queuedMessagesReordered")
         case .chatDraftChanged: try container.encode("chat/draftChanged")
+        case .chatIsReadChanged: try container.encode("chat/isReadChanged")
         case .chatIsArchivedChanged: try container.encode("chat/isArchivedChanged")
         case .chatInputRequested: try container.encode("chat/inputRequested")
         case .chatInputAnswerChanged: try container.encode("chat/inputAnswerChanged")
@@ -1267,6 +1276,34 @@ public struct ChatChangesetsChangedAction: Codable, Sendable {
     }
 }
 
+public struct ChatCanvasesChangedAction: Codable, Sendable {
+    public var type: ActionType
+    /// New canvas channel references, or `undefined` to clear the collection.
+    public var canvases: [CanvasReference]?
+
+    public init(
+        type: ActionType,
+        canvases: [CanvasReference]? = nil
+    ) {
+        self.type = type
+        self.canvases = canvases
+    }
+}
+
+public struct CanvasStateChangedAction: Codable, Sendable {
+    public var type: ActionType
+    /// New authoritative canvas state.
+    public var canvas: CanvasState
+
+    public init(
+        type: ActionType,
+        canvas: CanvasState
+    ) {
+        self.type = type
+        self.canvas = canvas
+    }
+}
+
 public struct SessionTitleChangedAction: Codable, Sendable {
     public var type: ActionType
     /// New title
@@ -1621,6 +1658,20 @@ public struct ChatDraftChangedAction: Codable, Sendable {
     ) {
         self.type = type
         self.draft = draft
+    }
+}
+
+public struct ChatIsReadChangedAction: Codable, Sendable {
+    public var type: ActionType
+    /// Whether the chat has been read
+    public var isRead: Bool
+
+    public init(
+        type: ActionType,
+        isRead: Bool
+    ) {
+        self.type = type
+        self.isRead = isRead
     }
 }
 
@@ -2556,6 +2607,8 @@ public enum StateAction: Codable, Sendable {
     case chatBackgroundWorkRemoved(ChatBackgroundWorkRemovedAction)
     case chatMovableChanged(ChatMovableChangedAction)
     case chatChangesetsChanged(ChatChangesetsChangedAction)
+    case chatCanvasesChanged(ChatCanvasesChangedAction)
+    case canvasStateChanged(CanvasStateChangedAction)
     case sessionTitleChanged(SessionTitleChangedAction)
     case chatUsage(ChatUsageAction)
     case chatReasoning(ChatReasoningAction)
@@ -2577,6 +2630,7 @@ public enum StateAction: Codable, Sendable {
     case chatPendingMessageRemoved(ChatPendingMessageRemovedAction)
     case chatQueuedMessagesReordered(ChatQueuedMessagesReorderedAction)
     case chatDraftChanged(ChatDraftChangedAction)
+    case chatIsReadChanged(ChatIsReadChangedAction)
     case chatIsArchivedChanged(ChatIsArchivedChangedAction)
     case chatInputRequested(ChatInputRequestedAction)
     case chatInputAnswerChanged(ChatInputAnswerChangedAction)
@@ -2701,6 +2755,10 @@ public enum StateAction: Codable, Sendable {
             self = .chatMovableChanged(try ChatMovableChangedAction(from: decoder))
         case "chat/changesetsChanged":
             self = .chatChangesetsChanged(try ChatChangesetsChangedAction(from: decoder))
+        case "chat/canvasesChanged":
+            self = .chatCanvasesChanged(try ChatCanvasesChangedAction(from: decoder))
+        case "canvas/stateChanged":
+            self = .canvasStateChanged(try CanvasStateChangedAction(from: decoder))
         case "session/titleChanged":
             self = .sessionTitleChanged(try SessionTitleChangedAction(from: decoder))
         case "chat/usage":
@@ -2743,6 +2801,8 @@ public enum StateAction: Codable, Sendable {
             self = .chatQueuedMessagesReordered(try ChatQueuedMessagesReorderedAction(from: decoder))
         case "chat/draftChanged":
             self = .chatDraftChanged(try ChatDraftChangedAction(from: decoder))
+        case "chat/isReadChanged":
+            self = .chatIsReadChanged(try ChatIsReadChangedAction(from: decoder))
         case "chat/isArchivedChanged":
             self = .chatIsArchivedChanged(try ChatIsArchivedChangedAction(from: decoder))
         case "chat/inputRequested":
@@ -2884,6 +2944,8 @@ public enum StateAction: Codable, Sendable {
         case .chatBackgroundWorkRemoved(let v): try v.encode(to: encoder)
         case .chatMovableChanged(let v): try v.encode(to: encoder)
         case .chatChangesetsChanged(let v): try v.encode(to: encoder)
+        case .chatCanvasesChanged(let v): try v.encode(to: encoder)
+        case .canvasStateChanged(let v): try v.encode(to: encoder)
         case .sessionTitleChanged(let v): try v.encode(to: encoder)
         case .chatUsage(let v): try v.encode(to: encoder)
         case .chatReasoning(let v): try v.encode(to: encoder)
@@ -2905,6 +2967,7 @@ public enum StateAction: Codable, Sendable {
         case .chatPendingMessageRemoved(let v): try v.encode(to: encoder)
         case .chatQueuedMessagesReordered(let v): try v.encode(to: encoder)
         case .chatDraftChanged(let v): try v.encode(to: encoder)
+        case .chatIsReadChanged(let v): try v.encode(to: encoder)
         case .chatIsArchivedChanged(let v): try v.encode(to: encoder)
         case .chatInputRequested(let v): try v.encode(to: encoder)
         case .chatInputAnswerChanged(let v): try v.encode(to: encoder)

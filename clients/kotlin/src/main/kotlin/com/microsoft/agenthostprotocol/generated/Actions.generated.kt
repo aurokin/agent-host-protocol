@@ -59,6 +59,8 @@ value class ActionType(val rawValue: String) {
         val CHAT_BACKGROUND_WORK_REMOVED: ActionType = ActionType("chat/backgroundWorkRemoved")
         val CHAT_MOVABLE_CHANGED: ActionType = ActionType("chat/movableChanged")
         val CHAT_CHANGESETS_CHANGED: ActionType = ActionType("chat/changesetsChanged")
+        val CHAT_CANVASES_CHANGED: ActionType = ActionType("chat/canvasesChanged")
+        val CANVAS_STATE_CHANGED: ActionType = ActionType("canvas/stateChanged")
         val CHAT_WORKING_DIRECTORY_SET: ActionType = ActionType("chat/workingDirectorySet")
         val CHAT_WORKING_DIRECTORY_REMOVED: ActionType = ActionType("chat/workingDirectoryRemoved")
         val SESSION_TITLE_CHANGED: ActionType = ActionType("session/titleChanged")
@@ -76,6 +78,7 @@ value class ActionType(val rawValue: String) {
         val CHAT_PENDING_MESSAGE_REMOVED: ActionType = ActionType("chat/pendingMessageRemoved")
         val CHAT_QUEUED_MESSAGES_REORDERED: ActionType = ActionType("chat/queuedMessagesReordered")
         val CHAT_DRAFT_CHANGED: ActionType = ActionType("chat/draftChanged")
+        val CHAT_IS_READ_CHANGED: ActionType = ActionType("chat/isReadChanged")
         val CHAT_IS_ARCHIVED_CHANGED: ActionType = ActionType("chat/isArchivedChanged")
         val CHAT_INPUT_REQUESTED: ActionType = ActionType("chat/inputRequested")
         val CHAT_INPUT_ANSWER_CHANGED: ActionType = ActionType("chat/inputAnswerChanged")
@@ -779,6 +782,24 @@ data class ChatChangesetsChangedAction(
 )
 
 @Serializable
+data class ChatCanvasesChangedAction(
+    val type: ActionType,
+    /**
+     * New canvas channel references, or `undefined` to clear the collection.
+     */
+    val canvases: List<CanvasReference>? = null
+)
+
+@Serializable
+data class CanvasStateChangedAction(
+    val type: ActionType,
+    /**
+     * New authoritative canvas state.
+     */
+    val canvas: CanvasState
+)
+
+@Serializable
 data class SessionTitleChangedAction(
     val type: ActionType,
     /**
@@ -1015,6 +1036,15 @@ data class ChatDraftChangedAction(
      * New draft message, or `undefined` to clear it
      */
     val draft: Message? = null
+)
+
+@Serializable
+data class ChatIsReadChangedAction(
+    val type: ActionType,
+    /**
+     * Whether the chat has been read
+     */
+    val isRead: Boolean
 )
 
 @Serializable
@@ -1692,6 +1722,8 @@ sealed interface StateAction
 @JvmInline value class StateActionChatBackgroundWorkRemoved(val value: ChatBackgroundWorkRemovedAction) : StateAction
 @JvmInline value class StateActionChatMovableChanged(val value: ChatMovableChangedAction) : StateAction
 @JvmInline value class StateActionChatChangesetsChanged(val value: ChatChangesetsChangedAction) : StateAction
+@JvmInline value class StateActionChatCanvasesChanged(val value: ChatCanvasesChangedAction) : StateAction
+@JvmInline value class StateActionCanvasStateChanged(val value: CanvasStateChangedAction) : StateAction
 @JvmInline value class StateActionSessionTitleChanged(val value: SessionTitleChangedAction) : StateAction
 @JvmInline value class StateActionChatUsage(val value: ChatUsageAction) : StateAction
 @JvmInline value class StateActionChatReasoning(val value: ChatReasoningAction) : StateAction
@@ -1713,6 +1745,7 @@ sealed interface StateAction
 @JvmInline value class StateActionChatPendingMessageRemoved(val value: ChatPendingMessageRemovedAction) : StateAction
 @JvmInline value class StateActionChatQueuedMessagesReordered(val value: ChatQueuedMessagesReorderedAction) : StateAction
 @JvmInline value class StateActionChatDraftChanged(val value: ChatDraftChangedAction) : StateAction
+@JvmInline value class StateActionChatIsReadChanged(val value: ChatIsReadChangedAction) : StateAction
 @JvmInline value class StateActionChatIsArchivedChanged(val value: ChatIsArchivedChangedAction) : StateAction
 @JvmInline value class StateActionChatInputRequested(val value: ChatInputRequestedAction) : StateAction
 @JvmInline value class StateActionChatInputAnswerChanged(val value: ChatInputAnswerChangedAction) : StateAction
@@ -1810,6 +1843,8 @@ internal object StateActionSerializer : KSerializer<StateAction> {
             "chat/backgroundWorkRemoved" -> StateActionChatBackgroundWorkRemoved(input.json.decodeFromJsonElement(ChatBackgroundWorkRemovedAction.serializer(), element))
             "chat/movableChanged" -> StateActionChatMovableChanged(input.json.decodeFromJsonElement(ChatMovableChangedAction.serializer(), element))
             "chat/changesetsChanged" -> StateActionChatChangesetsChanged(input.json.decodeFromJsonElement(ChatChangesetsChangedAction.serializer(), element))
+            "chat/canvasesChanged" -> StateActionChatCanvasesChanged(input.json.decodeFromJsonElement(ChatCanvasesChangedAction.serializer(), element))
+            "canvas/stateChanged" -> StateActionCanvasStateChanged(input.json.decodeFromJsonElement(CanvasStateChangedAction.serializer(), element))
             "session/titleChanged" -> StateActionSessionTitleChanged(input.json.decodeFromJsonElement(SessionTitleChangedAction.serializer(), element))
             "chat/usage" -> StateActionChatUsage(input.json.decodeFromJsonElement(ChatUsageAction.serializer(), element))
             "chat/reasoning" -> StateActionChatReasoning(input.json.decodeFromJsonElement(ChatReasoningAction.serializer(), element))
@@ -1831,6 +1866,7 @@ internal object StateActionSerializer : KSerializer<StateAction> {
             "chat/pendingMessageRemoved" -> StateActionChatPendingMessageRemoved(input.json.decodeFromJsonElement(ChatPendingMessageRemovedAction.serializer(), element))
             "chat/queuedMessagesReordered" -> StateActionChatQueuedMessagesReordered(input.json.decodeFromJsonElement(ChatQueuedMessagesReorderedAction.serializer(), element))
             "chat/draftChanged" -> StateActionChatDraftChanged(input.json.decodeFromJsonElement(ChatDraftChangedAction.serializer(), element))
+            "chat/isReadChanged" -> StateActionChatIsReadChanged(input.json.decodeFromJsonElement(ChatIsReadChangedAction.serializer(), element))
             "chat/isArchivedChanged" -> StateActionChatIsArchivedChanged(input.json.decodeFromJsonElement(ChatIsArchivedChangedAction.serializer(), element))
             "chat/inputRequested" -> StateActionChatInputRequested(input.json.decodeFromJsonElement(ChatInputRequestedAction.serializer(), element))
             "chat/inputAnswerChanged" -> StateActionChatInputAnswerChanged(input.json.decodeFromJsonElement(ChatInputAnswerChangedAction.serializer(), element))
@@ -1921,6 +1957,8 @@ internal object StateActionSerializer : KSerializer<StateAction> {
             is StateActionChatBackgroundWorkRemoved -> output.json.encodeToJsonElement(ChatBackgroundWorkRemovedAction.serializer(), value.value)
             is StateActionChatMovableChanged -> output.json.encodeToJsonElement(ChatMovableChangedAction.serializer(), value.value)
             is StateActionChatChangesetsChanged -> output.json.encodeToJsonElement(ChatChangesetsChangedAction.serializer(), value.value)
+            is StateActionChatCanvasesChanged -> output.json.encodeToJsonElement(ChatCanvasesChangedAction.serializer(), value.value)
+            is StateActionCanvasStateChanged -> output.json.encodeToJsonElement(CanvasStateChangedAction.serializer(), value.value)
             is StateActionSessionTitleChanged -> output.json.encodeToJsonElement(SessionTitleChangedAction.serializer(), value.value)
             is StateActionChatUsage -> output.json.encodeToJsonElement(ChatUsageAction.serializer(), value.value)
             is StateActionChatReasoning -> output.json.encodeToJsonElement(ChatReasoningAction.serializer(), value.value)
@@ -1942,6 +1980,7 @@ internal object StateActionSerializer : KSerializer<StateAction> {
             is StateActionChatPendingMessageRemoved -> output.json.encodeToJsonElement(ChatPendingMessageRemovedAction.serializer(), value.value)
             is StateActionChatQueuedMessagesReordered -> output.json.encodeToJsonElement(ChatQueuedMessagesReorderedAction.serializer(), value.value)
             is StateActionChatDraftChanged -> output.json.encodeToJsonElement(ChatDraftChangedAction.serializer(), value.value)
+            is StateActionChatIsReadChanged -> output.json.encodeToJsonElement(ChatIsReadChangedAction.serializer(), value.value)
             is StateActionChatIsArchivedChanged -> output.json.encodeToJsonElement(ChatIsArchivedChangedAction.serializer(), value.value)
             is StateActionChatInputRequested -> output.json.encodeToJsonElement(ChatInputRequestedAction.serializer(), value.value)
             is StateActionChatInputAnswerChanged -> output.json.encodeToJsonElement(ChatInputAnswerChangedAction.serializer(), value.value)

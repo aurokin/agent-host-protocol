@@ -57,7 +57,7 @@ use ahp_types::actions::{
     ChatTurnStartedAction, StateAction,
 };
 use ahp_types::state::{
-    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, BackgroundWork,
+    ActiveTurn, AnnotationsState, AutomationRunState, AutomationState, BackgroundWork, CanvasState,
     ChangesetOperationStatus, ChangesetState, ChangesetStatus, ChatInputRequest, ChatState,
     ChildCustomization, ConfirmationOption, Customization, CustomizationEnablement,
     ErrorResponsePart, InputRequestResponsePart, McpServerCustomization, McpServerStartingState,
@@ -1190,6 +1190,10 @@ pub fn apply_action_to_chat(state: &mut ChatState, action: &StateAction) -> Redu
             state.changesets = a.changesets.clone();
             ReduceOutcome::Applied
         }
+        StateAction::ChatCanvasesChanged(a) => {
+            state.canvases = a.canvases.clone();
+            ReduceOutcome::Applied
+        }
         StateAction::ChatWorkingDirectorySet(a) => {
             let list = state.working_directories.get_or_insert_with(Vec::new);
             if list.contains(&a.directory) {
@@ -1407,6 +1411,10 @@ pub fn apply_action_to_chat(state: &mut ChatState, action: &StateAction) -> Redu
         }
         StateAction::ChatDraftChanged(a) => {
             state.draft = a.draft.clone();
+            ReduceOutcome::Applied
+        }
+        StateAction::ChatIsReadChanged(a) => {
+            state.status = with_status_flag(state.status, SessionStatus::IsRead, a.is_read);
             ReduceOutcome::Applied
         }
         StateAction::ChatIsArchivedChanged(a) => {
@@ -1870,6 +1878,17 @@ fn apply_input_answer_changed(
     ReduceOutcome::Applied
 }
 
+/// Apply a [`StateAction`] to a [`CanvasState`] in place.
+pub fn apply_action_to_canvas(state: &mut CanvasState, action: &StateAction) -> ReduceOutcome {
+    match action {
+        StateAction::CanvasStateChanged(a) => {
+            *state = a.canvas.clone();
+            ReduceOutcome::Applied
+        }
+        _ => ReduceOutcome::OutOfScope,
+    }
+}
+
 // ─── Terminal Reducer ─────────────────────────────────────────────────
 
 /// Apply a [`StateAction`] to a [`TerminalState`] in place.
@@ -2296,6 +2315,7 @@ mod tests {
             interactivity: None,
             working_directories: None,
             changesets: None,
+            canvases: None,
             turns: Vec::new(),
             turns_next_cursor: None,
             active_turn: None,
@@ -2711,6 +2731,14 @@ mod tests {
                     expected,
                     &parsed_actions,
                     apply_action_to_chat,
+                    &file_name,
+                    description,
+                ),
+                "canvas" => run_fixture::<CanvasState>(
+                    initial,
+                    expected,
+                    &parsed_actions,
+                    apply_action_to_canvas,
                     &file_name,
                     description,
                 ),

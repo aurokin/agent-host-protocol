@@ -70,6 +70,7 @@ import type {
   ChatBackgroundWorkRemovedAction,
   ChatMovableChangedAction,
   ChatChangesetsChangedAction,
+  ChatCanvasesChangedAction,
   ChatWorkingDirectorySetAction,
   ChatWorkingDirectoryRemovedAction,
   ChatUsageAction,
@@ -78,6 +79,7 @@ import type {
   ChatPendingMessageRemovedAction,
   ChatQueuedMessagesReorderedAction,
   ChatDraftChangedAction,
+  ChatIsReadChangedAction,
   ChatIsArchivedChangedAction,
   ChatInputRequestedAction,
   ChatInputAnswerChangedAction,
@@ -85,6 +87,10 @@ import type {
   ChatTruncatedAction,
   ChatTurnsLoadedAction,
 } from '../channels-chat/actions.js';
+
+import type {
+  CanvasStateChangedAction,
+} from '../channels-canvas/actions.js';
 
 import type {
   ChangesetStatusChangedAction,
@@ -175,6 +181,8 @@ export const enum ActionType {
   ChatBackgroundWorkRemoved = 'chat/backgroundWorkRemoved',
   ChatMovableChanged = 'chat/movableChanged',
   ChatChangesetsChanged = 'chat/changesetsChanged',
+  ChatCanvasesChanged = 'chat/canvasesChanged',
+  CanvasStateChanged = 'canvas/stateChanged',
   ChatWorkingDirectorySet = 'chat/workingDirectorySet',
   ChatWorkingDirectoryRemoved = 'chat/workingDirectoryRemoved',
   SessionTitleChanged = 'session/titleChanged',
@@ -192,6 +200,7 @@ export const enum ActionType {
   ChatPendingMessageRemoved = 'chat/pendingMessageRemoved',
   ChatQueuedMessagesReordered = 'chat/queuedMessagesReordered',
   ChatDraftChanged = 'chat/draftChanged',
+  ChatIsReadChanged = 'chat/isReadChanged',
   ChatIsArchivedChanged = 'chat/isArchivedChanged',
   ChatInputRequested = 'chat/inputRequested',
   ChatInputAnswerChanged = 'chat/inputAnswerChanged',
@@ -339,6 +348,8 @@ export type StateAction =
   | ChatBackgroundWorkRemovedAction
   | ChatMovableChangedAction
   | ChatChangesetsChangedAction
+  | ChatCanvasesChangedAction
+  | CanvasStateChangedAction
   | ChatWorkingDirectorySetAction
   | ChatWorkingDirectoryRemovedAction
   | ChatUsageAction
@@ -347,6 +358,7 @@ export type StateAction =
   | ChatPendingMessageRemovedAction
   | ChatQueuedMessagesReorderedAction
   | ChatDraftChangedAction
+  | ChatIsReadChangedAction
   | ChatIsArchivedChangedAction
   | ChatInputRequestedAction
   | ChatInputAnswerChangedAction

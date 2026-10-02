@@ -242,6 +242,11 @@ public func chatReducer(state: ChatState, action: StateAction) -> ChatState {
         next.changesets = a.changesets
         return next
 
+    case .chatCanvasesChanged(let a):
+        var next = state
+        next.canvases = a.canvases
+        return next
+
     case .chatWorkingDirectorySet(let a):
         if (state.workingDirectories ?? []).contains(a.directory) { return state }
         var next = state
@@ -714,6 +719,11 @@ public func chatReducer(state: ChatState, action: StateAction) -> ChatState {
         next.draft = a.draft
         return next
 
+    case .chatIsReadChanged(let a):
+        var next = state
+        next.status = withStatusFlag(next.status, .isRead, a.isRead)
+        return next
+
     case .chatIsArchivedChanged(let a):
         var next = state
         next.status = withStatusFlag(next.status, .isArchived, a.isArchived)
@@ -997,6 +1007,7 @@ public let clientDispatchableActions: Set<String> = [
     "chat/pendingMessageSet",
     "chat/pendingMessageRemoved",
     "chat/queuedMessagesReordered",
+    "chat/isReadChanged",
     "chat/isArchivedChanged",
     "chat/inputAnswerChanged",
     "chat/inputCompleted",
@@ -1019,7 +1030,7 @@ public func isClientDispatchable(_ action: StateAction) -> Bool {
          .sessionActiveClientRemoved,
          .chatPendingMessageSet,
          .chatPendingMessageRemoved, .chatQueuedMessagesReordered,
-         .chatIsArchivedChanged,
+         .chatIsReadChanged, .chatIsArchivedChanged,
          .chatInputAnswerChanged, .chatInputCompleted,
          .sessionCustomizationToggled,
          .sessionMcpServerStartRequested, .sessionMcpServerStopRequested,
@@ -1304,6 +1315,14 @@ private func updateResponsePart(
     var next = state
     next.activeTurn = activeTurn
     return next
+}
+
+/// Pure reducer for live canvas state.
+public func canvasReducer(state: CanvasState, action: StateAction) -> CanvasState {
+    guard case .canvasStateChanged(let a) = action else {
+        return state
+    }
+    return a.canvas
 }
 
 // MARK: - Terminal Reducer

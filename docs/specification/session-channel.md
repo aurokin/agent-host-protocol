@@ -65,6 +65,15 @@ per-chat channel stay consistent. Cross-session moves use
 `session/chatRemoved` on the previous owner and `session/chatAdded` on the new
 owner. Same-session moves only change the selected catalog entry's position.
 
+When a chat's `status` changes, the producer MUST project its
+exact value into the matching
+[`SessionChatSummary.status`](/reference/session#sessionchatsummary) field and
+publish the complete compact `SessionSummary.chats` catalog through
+`root/sessionSummaryChanged`. The bitset includes the chat's activity state and
+its independent `SessionStatus.IsRead` and `SessionStatus.IsArchived` flags;
+clients use bitwise checks to render these states. The compact `status` field
+is optional to ease adoption. When it is absent, clients MUST treat the status
+as unknown, not as unread or unarchived.
 
 When `defaultChat` is set, its matching `ChatSummary` MUST NOT advertise
 `movable: true`. If changing `defaultChat` changes either the old or new

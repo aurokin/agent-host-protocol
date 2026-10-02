@@ -386,11 +386,12 @@ async fn delayed_discovery_preserves_queued_additions_changes_and_removals() {
         ),
         (
             "root/sessionSummaryChanged",
-            json!({"session":"changed", "changes":{"title":"fresh", "_meta":{"test":true}}, "channel":"ahp-root://"}),
+            json!({"session":"changed", "changes":{"title":"fresh", "_meta":{"test":true},
+                "chats":[{"resource":"ahp-chat:/latest", "title":"Latest", "status":97}]}, "channel":"ahp-root://"}),
         ),
         (
             "root/sessionSummaryChanged",
-            json!({"session":"changed", "changes":{"activity":"busy"}, "channel":"ahp-root://"}),
+            json!({"session":"changed", "changes":{"activity":"busy", "defaultChat":"ahp-chat:/latest"}, "channel":"ahp-root://"}),
         ),
         (
             "root/sessionRemoved",
@@ -446,6 +447,10 @@ async fn delayed_discovery_preserves_queued_additions_changes_and_removals() {
                 assert_eq!(changed.title, "fresh");
                 assert_eq!(changed.activity.as_deref(), Some("busy"));
                 assert_eq!(changed.meta.as_ref().unwrap()["test"], json!(true));
+                let chat = &changed.chats.as_ref().unwrap()[0];
+                assert_eq!(chat.resource, "ahp-chat:/latest");
+                assert_eq!(chat.status, Some(97));
+                assert_eq!(changed.default_chat.as_deref(), Some("ahp-chat:/latest"));
                 break;
             }
             tokio::task::yield_now().await;

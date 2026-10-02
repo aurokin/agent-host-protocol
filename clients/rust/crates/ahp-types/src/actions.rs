@@ -15,16 +15,17 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::state::{
     AgentInfo, AgentSelection, Annotation, AnnotationEntry, AnnotationOrigin, AutomationDefinition,
     AutomationDefinitionPatch, AutomationEntry, AutomationRunLifecycle, AutomationRunSummary,
-    BackgroundWork, ChangesSummary, Changeset, ChangesetFile, ChangesetOperation,
-    ChangesetOperationStatus, ChangesetStatus, ChatInputAnswer, ChatInputRequest,
-    ChatInputResponseKind, ChatInteractivity, ChatOrigin, ChatSummary, ConfirmationOption,
-    ContentRef, Customization, CustomizationEnablement, ErrorInfo, ErrorResponsePart,
-    FileEditCollection, McpAuthRequirement, McpServerState, Message, ModelSelection,
-    PendingMessageKind, ResponsePart, SessionActiveClient, SessionInputRequest, SideChatSelection,
-    TerminalClaim, TerminalInfo, TextRange, ToolCallCancellationReason, ToolCallConfirmationReason,
-    ToolCallContributor, ToolCallResult, ToolCallRiskAssessment, ToolDefinition, ToolInput,
-    ToolResultContent, Turn, UsageInfo,
+    BackgroundWork, CanvasReference, CanvasState, ChangesSummary, Changeset, ChangesetFile,
+    ChangesetOperation, ChangesetOperationStatus, ChangesetStatus, ChatInputAnswer,
+    ChatInputRequest, ChatInputResponseKind, ChatInteractivity, ChatOrigin, ChatSummary,
+    ConfirmationOption, ContentRef, Customization, CustomizationEnablement, ErrorInfo,
+    ErrorResponsePart, FileEditCollection, McpAuthRequirement, McpServerState, Message,
+    ModelSelection, PendingMessageKind, ResponsePart, SessionActiveClient, SessionInputRequest,
+    SideChatSelection, TerminalClaim, TerminalInfo, TextRange, ToolCallCancellationReason,
+    ToolCallConfirmationReason, ToolCallContributor, ToolCallResult, ToolCallRiskAssessment,
+    ToolDefinition, ToolInput, ToolResultContent, Turn, UsageInfo,
 };
+
 // ─── ActionType ──────────────────────────────────────────────────────
 
 /// Discriminant values for all state actions.
@@ -60,6 +61,8 @@ pub enum ActionType {
     ChatBackgroundWorkRemoved,
     ChatMovableChanged,
     ChatChangesetsChanged,
+    ChatCanvasesChanged,
+    CanvasStateChanged,
     ChatWorkingDirectorySet,
     ChatWorkingDirectoryRemoved,
     SessionTitleChanged,
@@ -77,6 +80,7 @@ pub enum ActionType {
     ChatPendingMessageRemoved,
     ChatQueuedMessagesReordered,
     ChatDraftChanged,
+    ChatIsReadChanged,
     ChatIsArchivedChanged,
     ChatInputRequested,
     ChatInputAnswerChanged,
@@ -183,6 +187,8 @@ impl serde::Serialize for ActionType {
             }
             Self::ChatMovableChanged => serializer.serialize_str("chat/movableChanged"),
             Self::ChatChangesetsChanged => serializer.serialize_str("chat/changesetsChanged"),
+            Self::ChatCanvasesChanged => serializer.serialize_str("chat/canvasesChanged"),
+            Self::CanvasStateChanged => serializer.serialize_str("canvas/stateChanged"),
             Self::ChatWorkingDirectorySet => serializer.serialize_str("chat/workingDirectorySet"),
             Self::ChatWorkingDirectoryRemoved => {
                 serializer.serialize_str("chat/workingDirectoryRemoved")
@@ -218,6 +224,7 @@ impl serde::Serialize for ActionType {
                 serializer.serialize_str("chat/queuedMessagesReordered")
             }
             Self::ChatDraftChanged => serializer.serialize_str("chat/draftChanged"),
+            Self::ChatIsReadChanged => serializer.serialize_str("chat/isReadChanged"),
             Self::ChatIsArchivedChanged => serializer.serialize_str("chat/isArchivedChanged"),
             Self::ChatInputRequested => serializer.serialize_str("chat/inputRequested"),
             Self::ChatInputAnswerChanged => serializer.serialize_str("chat/inputAnswerChanged"),
@@ -352,6 +359,8 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "chat/backgroundWorkRemoved" => Self::ChatBackgroundWorkRemoved,
             "chat/movableChanged" => Self::ChatMovableChanged,
             "chat/changesetsChanged" => Self::ChatChangesetsChanged,
+            "chat/canvasesChanged" => Self::ChatCanvasesChanged,
+            "canvas/stateChanged" => Self::CanvasStateChanged,
             "chat/workingDirectorySet" => Self::ChatWorkingDirectorySet,
             "chat/workingDirectoryRemoved" => Self::ChatWorkingDirectoryRemoved,
             "session/titleChanged" => Self::SessionTitleChanged,
@@ -369,6 +378,7 @@ impl<'de> serde::Deserialize<'de> for ActionType {
             "chat/pendingMessageRemoved" => Self::ChatPendingMessageRemoved,
             "chat/queuedMessagesReordered" => Self::ChatQueuedMessagesReordered,
             "chat/draftChanged" => Self::ChatDraftChanged,
+            "chat/isReadChanged" => Self::ChatIsReadChanged,
             "chat/isArchivedChanged" => Self::ChatIsArchivedChanged,
             "chat/inputRequested" => Self::ChatInputRequested,
             "chat/inputAnswerChanged" => Self::ChatInputAnswerChanged,
@@ -535,6 +545,9 @@ pub struct SessionChatRemovedAction {
 /// SHOULD then wait for a {@link SessionChatAddedAction | `session/chatAdded`}.
 ///
 /// Mirrors the root-channel `root/sessionSummaryChanged` notification.
+/// When `changes.status` changes, the host MUST project that exact value into
+/// the matching `SessionChatSummary.status` field and publish
+/// the updated compact chat catalog through `root/sessionSummaryChanged`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionChatUpdatedAction {
@@ -1133,6 +1146,30 @@ pub struct ChatChangesetsChangedAction {
     pub changesets: Option<Vec<Changeset>>,
 }
 
+/// The live canvas channels exposed by this chat changed.
+///
+/// Replaces {@link ChatState.canvases | `state.canvases`} entirely. Set to
+/// `undefined` to clear the collection.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatCanvasesChangedAction {
+    /// New canvas channel references, or `undefined` to clear the collection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canvases: Option<Vec<CanvasReference>>,
+}
+
+/// The presentation state for this canvas changed.
+///
+/// Replaces the subscribed canvas channel state entirely. Full-replacement
+/// semantics intentionally keep this early-development channel free to evolve
+/// without expanding the stable chat action surface.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CanvasStateChangedAction {
+    /// New authoritative canvas state.
+    pub canvas: CanvasState,
+}
+
 /// Session title updated. Fired by the server when the title is auto-generated
 /// from conversation, or dispatched by a client to rename a session.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1474,6 +1511,22 @@ pub struct ChatDraftChangedAction {
     /// New draft message, or `undefined` to clear it
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub draft: Option<Message>,
+}
+
+/// The read state of the chat changed.
+///
+/// Dispatched by a client to mark any known chat, including the owning
+/// session's default chat, as read (e.g. after viewing it) or unread. This
+/// changes only the addressed chat; it does not change the read state of its
+/// owning session or sibling chats. Use `session/isReadChanged` only to change
+/// the owning session's independent read state. After accepting this action,
+/// the host also synchronizes the addressed chat's `ChatSummary.status` and
+/// `SessionChatSummary.status` projections.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChatIsReadChangedAction {
+    /// Whether the chat has been read
+    pub is_read: bool,
 }
 
 /// The archived state of the chat changed.
@@ -2389,6 +2442,10 @@ pub enum StateAction {
     ChatMovableChanged(ChatMovableChangedAction),
     #[serde(rename = "chat/changesetsChanged")]
     ChatChangesetsChanged(ChatChangesetsChangedAction),
+    #[serde(rename = "chat/canvasesChanged")]
+    ChatCanvasesChanged(ChatCanvasesChangedAction),
+    #[serde(rename = "canvas/stateChanged")]
+    CanvasStateChanged(CanvasStateChangedAction),
     #[serde(rename = "session/titleChanged")]
     SessionTitleChanged(SessionTitleChangedAction),
     #[serde(rename = "chat/usage")]
@@ -2431,6 +2488,8 @@ pub enum StateAction {
     ChatQueuedMessagesReordered(ChatQueuedMessagesReorderedAction),
     #[serde(rename = "chat/draftChanged")]
     ChatDraftChanged(ChatDraftChangedAction),
+    #[serde(rename = "chat/isReadChanged")]
+    ChatIsReadChanged(ChatIsReadChangedAction),
     #[serde(rename = "chat/isArchivedChanged")]
     ChatIsArchivedChanged(ChatIsArchivedChangedAction),
     #[serde(rename = "chat/inputRequested")]
